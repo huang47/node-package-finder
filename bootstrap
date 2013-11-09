@@ -1,0 +1,13 @@
+#!/usr/bin/env node
+
+var packages = require('./src/npm-all-1108.json');
+
+var pkgs = Object.keys(packages).map(function (k) { return packages[k]; });
+
+var result = pkgs.
+    filter(function (p) {
+        return p.description && -1 !== p.description.indexOf('template');
+    }).
+    filter(function (p) {
+        return Array.isArray(p.keywords) && -1 === p.keywords.join(' ').indexOf('template');
+    });
