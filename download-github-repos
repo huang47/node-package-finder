@@ -1,0 +1,162 @@
+#!/usr/bin/env node
+
+var API = require('./lib/api');
+var mongo = require('mongoskin');
+var request = require('request');
+var Rx = require('rx');
+var githubHostRegex = /.*github.com[:\/](.*)\/(.*)/;
+var db = mongo.db(API.MONGO_CONNECT_STRING);
+
+function getResultObject(r) {
+    return {
+        name: r.name,
+        fullName: r.full_name,
+        owner: r.owner && r.owner.login,
+        private: r.private,
+        description: r.description,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+        stars: r.stargazers_count || 0,
+        openIssues: r.open_issues_count || 0,
+        forks: r.forks,
+        subscribers: r.subscribers_count || 0,
+        hasWiki: r.has_wiki || false,
+        timestamp: Date.now()
+    };
+}
+
+var packages = db.collection('packages');
+var repos = db.collection('repos');
+var nextRoundTime;
+var lookup = {};
+
+/**
+ * download github users with given npm-package infomation.
+ *
+ * TODO
+ * we have to use mongodb way to distinct by either repo.url
+ * or githubber id. Now it's kind of wasting quota to fetch
+ * same githubber id.
+ *
+ * @method downloadGithubUsers
+ * @return {Rx.Observable}
+ */
+var downloadGithubRepos = Rx.Observable.create(function (o) {
+
+    packages.
+        find().
+        sort({ timestamp: 1 }).
+        each(function (e, p) {
+
+            // WTF
+            if (null === p) { return; }
+
+            var packageName = p.name,
+                githubUrl = p.repo.url,
+                githubUser,
+                githubRepo,
+                matched,
+                fullName;
+
+            matched = githubUrl.match(githubHostRegex);
+
+            if (null === matched) { return; }
+
+            githubUser = matched[1];
+            githubRepo = matched[2];
+
+            if (-1 !== githubRepo.indexOf('.git')) {
+                githubRepo = githubRepo.substr(0, githubRepo.indexOf('.git'));
+            }
+
+            fullName = githubUser + '/' + githubRepo;
+
+            repos.findOne({ fullName: fullName }, function (e, repo) {
+
+                if (null !== repo) {
+                    console.log('%s is fetched', fullName);
+                    return;
+                }
+
+                request(API.GITHUB_REPO_API.replace(/{id}/, githubUser).replace(/{repo}/, githubRepo), function (e, r) {
+
+                    if (e) { console.error(e); return; }
+
+                    if (!r || !r.body) { console.error(new Error('response without body')); return; }
+
+                    var body, resultObject;
+                    
+                    try {
+                        body = JSON.parse(r.body);
+                    } catch (e) {
+                        console.error('parsing response body error ', e);
+                        return;
+                    }
+
+                    // if body is touched, then we have to update timestamp of package
+                    packages.update({ name: packageName }, {
+                        $set: { timestamp: Date.now() }
+                    });
+
+                    if (body && body.message) {
+                        console.log(body.message, 'message');
+                        if (null !== body.message.match(/Not Found/)) {
+                            console.log('https://github.com/%s is not found in github API', fullName);
+                            return;
+                        } else if (null !== body.message.match(/API/)) {
+                            nextRoundTime = new Date(r.headers['x-ratelimit-reset'] * 1000 + 60000);
+                            o.onCompleted();
+                            return;
+                        }
+                    }
+
+                    resultObject = getResultObject(body);
+
+                    if (!resultObject || !resultObject.fullName) {
+                        // WTF & continue
+                        return;
+                    }
+
+                    repos.insert(resultObject, function (e, doc) {
+                        if (e) {
+                            console.error('insert post hook error', e);
+                            return;
+                        }
+
+                        lookup[fullName] = true;
+
+                        o.onNext(resultObject);
+                    });
+                });
+            });
+        });
+});
+
+function run() {
+
+    function log(result) {
+        console.log('upserted githubber', result.id);
+    }
+
+    function onError(e) {
+        console.error('something unexpected happened', e);
+    }
+
+    downloadGithubRepos.subscribe(
+        log,
+        onError,
+        function () {
+            if (!nextRoundTime) {
+                nextRoundTime = new Date(Date.now() + 61 * 60 * 1000);
+            }
+
+            console.log('next round timer ', nextRoundTime);
+
+            Rx.Observable.
+                timer(nextRoundTime).
+                subscribe(run)
+        }
+    );
+};
+
+exports.run = run;

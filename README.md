@@ -1,74 +1,61 @@
-## Quick Start
+# node package finder
 
-~~~sh
-# getting the code
-git clone git@github.com:nko4/go-taiwanese.git && cd ./go-taiwanese/
+## Motivation
+Nowadays, in node ecosystem it's not easy to find the packages we are looking for.
+For example, when a noder comes to npmjs.org or google.com, how do they find the 
+best promise library? `npf` comes to help
 
-# developing
-npm install
-npm start
+## Methodology
+Besides keywords / description, we also compare
 
-# deploying (to http://go-taiwanese.2013.nodeknockout.com/)
-./deploy nko
+1. number of dependents
+1. author (github repo stars, github followers)
+1. TODO: rates of related stackoverflow / quora discussions
 
-# ssh access
-ssh deploy@go-taiwanese.2013.nodeknockout.com
-ssh root@go-taiwanese.2013.nodeknockout.com
-# or, if you get prompted for a password
-ssh -i ./id_deploy deploy@go-taiwanese.2013.nodeknockout.com
-ssh -i ./id_deploy root@go-taiwanese.2013.nodeknockout.com
-~~~
+### number of dependents
+```javascript
+/package/:package/:author/ci
+```
+fetch node package dependents
 
-Read more about this setup [on our blog][deploying-nko].
+### author
+searchHelper
 
-[deploying-nko]: http://blog.nodeknockout.com/post/66039926165/node-knockout-deployment-setup
+## API
 
-## Tips
+### search package
+```javascript
+/package/:package
+```
 
-### Your Server
+which returns a list of objects which possess name and score
 
-We've already set up a basic node server for you. Details:
+lazy load all other meta info?
 
-* Ubuntu 12.04 (Precise) - 64-bit
-* server.js is at: `/home/deploy/current/server.js`
-* logs are at: `/home/deploy/shared/logs/server/current`
-* `runit` keeps the server running.
-  * `sv restart serverjs` - restarts
-  * `sv start serverjs` - starts
-  * `sv stop serverjs` - stops
-  * `ps -ef | grep runsvdir` - to see logs
-  * `cat /etc/service/serverjs/run` - to see the config
+### top10 package
 
-You can use the `./deploy` script included in this repo to deploy to your
-server right now. Advanced users, feel free to tweak.
+```javascript
+route /package/top/:package
+```
+get top 10 search results on top of 
 
-Read more about this setup [on our blog][deploying-nko].
 
-### Vote KO Widget
+## test results
+```javascript
+/package/:package/:author/ci
+```
 
-![Vote KO widget](http://f.cl.ly/items/1n3g0W0F0G3V0i0d0321/Screen%20Shot%202012-11-04%20at%2010.01.36%20AM.png)
+get travis-ci test results with following format
+```
+{
+    success: <boolean>,
+    time: <string of last build time>
+}
+```
 
-Use our "Vote KO" widget to let from your app directly. Here's the code for
-including it in your site:
+## TODO
+1. normalize scores, especially downloads/stars/followers
 
-~~~html
-<iframe src="http://nodeknockout.com/iframe/go-taiwanese" frameborder=0 scrolling=no allowtransparency=true width=115 height=25>
-</iframe>
-~~~
+## appendix
+1. [irregular //github.com/{id}/{repo}.git](https://gist.github.com/huang47/7541812)
 
-### Tutorials & Free Services
-
-If you're feeling a bit lost about how to get started or what to use, we've
-got some [great resources for you](http://nodeknockout.com/resources),
-including:
-
-* [How to install node and npm](http://blog.nodeknockout.com/post/65463770933/how-to-install-node-js-and-npm)
-* [Getting started with Express](http://blog.nodeknockout.com/post/65630558855/getting-started-with-express)
-* [OAuth with Passport](http://blog.nodeknockout.com/post/66118192565/getting-started-with-passport)
-* [Going Beyond “Hello World” with Drywall](http://blog.nodeknockout.com/post/65711111886/going-beyond-hello-world-with-drywall)
-* [and many more](http://nodeknockout.com/resources#tutorials)&hellip;
-
-## Have fun!
-
-If you have any issues, we're on IRC in #nodeknockout on freenode, email us at
-<help@nodeknockout.com>, or tweet [@node_knockout](https://twitter.com/node_knockout).

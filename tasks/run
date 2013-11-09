@@ -1,0 +1,87 @@
+#!/usr/bin/env node
+
+var downloadNpmSource$ = require('./download-npm-source');
+var npmPackage$ = require('./npm-packages');
+var githubRepo$ = require('./github-repos');
+var config = require('../config');
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const UNACKNOWLEDGED = 0;
+const UPDATE_CONFIG = {
+    upsert: true,
+    w: UNACKNOWLEDGED,
+    writeConcern: {
+        w: UNACKNOWLEDGED
+    }
+};
+
+function updatePackages() {
+    config.mongos.forEach(function (db) {
+        var dbPackages = db.collection('packages');
+        dbPackages.findOne(function () {
+            npmPackage$.
+                forEach(function (p) {
+                    dbPackages.update(
+                        { name: p.name },
+                        { $set: {
+                            description: p.description,
+                            repoUrl: p.repoUrl,
+                            keywords: p.keywords,
+                            timestamp: p.timestamp
+                        } },
+                        { upsert: true }
+                    );
+                });
+        });
+    });
+}
+
+function updateRepos() {
+    config.mongos.forEach(function (db) {
+        var dbRepos = db.collection('repos');
+        githubRepo$.
+            // TODO
+            // this might cause a potential problem
+            // that keep a tremendous cach for github repos.
+            distinct(function (repo) {
+                return repo.full_name;
+            }).
+            forEach(function (repo) {
+                console.log('[insert] %s', repo.full_name);
+                dbRepos.update(
+                    { fullName: repo.full_name },
+                    { $set: {
+                        name: repo.name,
+                        owner: repo.owner && repo.owner.login,
+                        private: repo.private,
+                        description: repo.description,
+                        createdAt: repo.created_at,
+                        updatedAt: repo.updated_at,
+                        stars: repo.stargazers_count || 0,
+                        openIssues: repo.open_issues_count || 0,
+                        forks: repo.forks,
+                        subscribers: repo.subscribers_count || 0,
+                        hasWiki: repo.has_wiki || false,
+                        timestamp: Date.now()
+                    } },
+                    UPDATE_CONFIG
+                );
+            });
+    });
+}
+
+updateRepos();
+
+//Rx.Observable.timer(0, DAY_IN_MS).
+//    do(function () {
+//        console.log('download npm source @ %s', Date());
+//    }).
+//    flatMap(function () {
+//        return downloadNpmSource$;
+//    }).
+//    forEach(function writeToFile(e) {
+//        console.log('write to file @ %s', Date());
+//        fs.writeFileSync(config.NPM_FILE, e.data);
+//
+//        updatePackages();
+//    });

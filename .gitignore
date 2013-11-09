@@ -1,0 +1,6 @@
+# secret file
+.credential.json
+
+# general
+node_modules
+output

@@ -1,0 +1,84 @@
+#!/usr/bin/env node
+
+var API = require('../lib/api');
+var mongo = require('mongoskin');
+var request = require('request');
+var Rx = require('rx');
+var db = mongo.db(API.MONGO_CONNECT_STRING);
+var packages = db.collection('packages');
+var dependencies = db.collection('dependencies');
+
+const KEY = '{package}';
+const URL = ['http://isaacs.iriscouch.com/registry/_design/app/_view/dependedUpon?startkey=["', KEY, '"]&endkey=["', KEY, '",{}]&group_level=2'].join('');
+const regexRule = new RegExp(KEY, 'g');
+
+function getDepdentsCount(name, cb) {
+    request({
+        url: encodeURI(URL.replace(regexRule, name)),
+        timeout: 5000
+    }, function (e, result) {
+        if (e) { cb(e, null); }
+
+        if (!result || !result.body) {
+            cb(new Error('response without body'), null);
+            return;
+        }
+
+        var body,
+            results;
+            
+        body = JSON.parse(result.body) || {};
+        results = body.rows.
+                    map(function (row) {
+                        return row.key[1];
+                    });
+
+        cb(null, results);
+    });
+}
+
+exports.run = Rx.Observable.create(function (o) {
+
+    packages.
+        find().
+        sort({ timestamp: 1 }).
+        toArray(function (e, pkgs) {
+
+            Rx.Observable.
+                interval(100).
+                subscribe(function (index) {
+                    var p = pkgs[index];
+
+                    if (p === null) { return; }
+
+                    getDepdentsCount(p.name, function (e, results) {
+                        var now;
+
+                        if (null === results) { return; }
+
+                        o.onNext({ index: index, name: p.name });
+
+                        now = Date.now();
+
+                        dependencies.update(
+                            { name: p.name },
+                            {
+                                $set: {
+                                    name: p.name,
+                                    dependencies: results,
+                                    timestamp: now,
+                                }
+                            },
+                            { upsert: true }
+                        );
+
+                        packages.update({ name: p.name }, {
+                            $set: {
+                                dependedUpon: results.length,
+                                timestamp: now
+                            }
+                        });
+                    });
+                });
+        });
+});

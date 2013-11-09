@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+
+var registry = require('npm-stats')();
+var API = require('../lib/api');
+var mongo = require('mongoskin');
+var Rx = require('rx');
+
+var db = mongo.db(API.MONGO_CONNECT_STRING);
+var packages = db.collection('packages');
+var downloads = db.collection('downloads');
+
+exports.run = Rx.Observable.create(function (o) {
+
+    packages.
+        find().
+        sort({ timestamp: 1 }).
+        toArray(function (e, pkgs) {
+            
+            Rx.Observable.
+                interval(100).
+                subscribe(function (index) {
+                    var package = pkgs[index];
+
+                    if (!package || !package.name) { return; }
+
+                    registry.module(package.name).downloads(function (err, results) {
+
+                        if (err) { return; }
+
+                        var now = Date.now();
+
+                        o.onNext(index);
+
+                        packages.update(
+                            { name: package.name },
+                            {
+                                $set: {
+                                    timestamp: now
+                                }
+                            }
+                        );
+
+                        downloads.update(
+                            { name: package.name },
+                            {
+                                $set: {
+                                    downloads: results,
+                                    timestamp: now
+                                }
+                            },
+                            { upsert: true }
+                        );
+                    });
+                });
+    });
+});
