@@ -1,7 +1,6 @@
 body {
     width: 800px;
     margin: 0 auto;
-    font-size: 2em;
 }
 
 form {
@@ -10,9 +9,20 @@ form {
 
 input[name="search"] {
     width: 80%;
+    font-size: 2em !important;
     margin-top: 20px;
 }
 
 /* search result */
 .sr {
+}
+
+.sr i.fa {
+    font-family: FontAwesome;
+}
+
+.sr h2 {
+    font-size: 1.4em;
+    display: inline-block;
+    margin-right: 10px;
 }
