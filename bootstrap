@@ -6,7 +6,7 @@ var Package = require('./lib/package').Package;
 
 var pkgs = Object.keys(source).map(function (k) { return source[k]; });
 
-var results = [];
+var results = {};
 
 var clientSideTemplatePackages = pkgs.
     filter(function (pkgMeta) {
@@ -21,7 +21,7 @@ var clientSideTemplatePackages = pkgs.
                (-1 !== p.desc.indexOf('template')));
     }).
     forEach(function (p) {
-        results.push(p.data);
+        results[p.name] = p.data;
     });
 
 fs.writeFileSync('./output/client-template.json', JSON.stringify(results));
