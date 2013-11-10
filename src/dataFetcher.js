@@ -27,12 +27,13 @@ function firePkgRequest() {
   if (canFirePkgReq()) {
     var name = pkgs[index++];
     var url = dataHelper.getGitHubUrl(name);
-    console.log('getting pkg', name);
+    console.log('getting pkg', name, 'current index', index);
     var repoInfo = githubHelper.getRepoInfo(name, url);
     if (repoInfo != null) {
       allPromises.push(repoInfo);
     }
     lastPromise = repoInfo;
+    // consider to write partial data
     if (index === pkgs.length) {
       q.all(allPromises).done(function (array) {
         var fileName = OUTPUT_DIR + 'pkg_github.json';
