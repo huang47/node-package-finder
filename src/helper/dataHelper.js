@@ -15,6 +15,24 @@ function getSearchMetadata() {
   return metadata;
 }
 
+function getSupportiveData(pkgName) {
+  var pkgTr = traverse(getPackageInfo(pkgName));
+  var metadataTr = traverse(getSearchMetadata());
+  var author = pkgTr.get([ 'authors', 0 ]);
+  var stars = pkgTr.get(['stars']);
+  if (!author) {
+    author = metadataTr.get([ pkgName, 'author']);
+    //TODO update repo info in next tick
+  }
+  var authorInfo = getPersonInfo(author);
+  var followers = (authorInfo && authorInfo.followers);
+
+  return {
+    stars: stars,
+    author: author,
+    followers: followers
+  };
+}
 
 function getGitHubUrl(key) {
   return rawPkgs.get([ key, 'repository', 'url' ]);
@@ -96,3 +114,4 @@ module.exports.updateGithubReposInfo = updateGithubReposInfo;
 module.exports.updateUserInfo = updateUserInfo;
 module.exports.getGitHubUrl = getGitHubUrl;
 module.exports.getAllGithubUsers = getAllGithubUsers;
+module.exports. getSupportiveData = getSupportiveData;

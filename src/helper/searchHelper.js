@@ -5,9 +5,26 @@ const KEYWORD_SCORE = 10;
 const DESC_SCORE = 5;
 const DERIVED_SCORE = 1;
 
+/**
+ * search package
+ *
+ * @param query
+ * @return [{
+ *   name: <string>,
+ *   stars: <github repo stars>,
+ *   author: <github author id>,
+ *   followers: <repo follower>,
+ *   score: <ranking score>
+ * }]
+ */
 function searchPackage(query) {
   var rawResults = queryPackages(query);
-  return weightedByPackage(rawResults);
+  var ret = weightedByPackage(rawResults);
+  _.each(ret, function(pkg) {
+    var supportiveData = dataHelper.getSupportiveData(pkg.name);
+    _.merge(pkg, supportiveData);
+  });
+  return _.sortBy(ret, 'score').reverse();
 }
 
 /**

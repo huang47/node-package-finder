@@ -46,6 +46,7 @@ function fireUserRequest() {
       });
       // unschedule
       clearInterval(scheduleId);
+      scheduleId = null;
     }
   }
 }
@@ -100,8 +101,6 @@ function updatePackageInfoFromGitHub() {
   allPromises = [];
   scheduleId = setInterval(firePkgRequest, 500); // fire every 200ms
 }
-
-
 
 module.exports.updatePackageInfoFromGitHub = updatePackageInfoFromGitHub;
 module.exports.updateGithubUsers = updateGithubUsers;
