@@ -157,20 +157,9 @@
         getKeys: function getKeys() {
             var keyups = this._fromEvent('keyup'),
                 _EMPTY_KEY = '',
-                keys,
                 stream;
 
-            keys = keyups
-                .map(function (e) {
-                    return e.srcElement.value.trim();
-                })
-                .distinctUntilChanged()
-                .filter(function (v) {
-                    return v !== _EMPTY_KEY;
-                });
-
-            stream = keyups.
-                skip(1).
+            return keyups.
                 throttle(200).
                 map(function (e) {
                     return e.srcElement.value.trim();
@@ -179,8 +168,6 @@
                 filter(function (v) {
                     return v !== _EMPTY_KEY;
                 });
-
-            return Rx.Observable.merge(keys.take(1), stream);
         }
     };
 

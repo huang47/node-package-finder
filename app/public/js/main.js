@@ -3,7 +3,7 @@
 
     var d = document,
         el = d.querySelector('input[type="search"]'),
-        input = new Input(el, { duration: 200 }),
+        input = new Input(el, { duration: 500 }),
         list = d.querySelector('ol[name="results"]'),
         template = new Template('#template-search-result');
 
