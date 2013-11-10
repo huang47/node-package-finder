@@ -100,6 +100,9 @@ function getPersonScore(persons) {
       f = (Math.min(100, p.followers) / 10) || 0;
       c = Math.min(10, (p.contributions.year / 24) + p.contributions.month);
       r = _.reduce(p.repos, function(s, repo) {
+            console.log(repo, 'repo');
+          return s;
+      }, 0);
     }
   });
   return score / persons.length;
@@ -110,4 +113,3 @@ module.exports.searchPackage = searchPackage;
 module.exports.internals = {
   getPackageWeight: getPackageWeight
 };
-
