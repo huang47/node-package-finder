@@ -13,13 +13,13 @@ var clientSideTemplatePackages = pkgs.
         return pkgMeta && pkgMeta.name;
     }).
     map(Package.create).
-    filter(function (p) {
-        // keyword/description contains either client or template
-        return (-1 !== p.keyword.indexOf('client')) ||
-               (-1 !== p.keyword.indexOf('template')) &&
-               ((-1 !== p.desc.indexOf('client')) ||
-               (-1 !== p.desc.indexOf('template')));
-    }).
+    //filter(function (p) {
+        //// keyword/description contains either client or template
+        //return (-1 !== p.keyword.indexOf('client')) ||
+               //(-1 !== p.keyword.indexOf('template')) &&
+               //((-1 !== p.desc.indexOf('client')) ||
+               //(-1 !== p.desc.indexOf('template')));
+    //}).
     forEach(function (p) {
         results[p.name] = p.data;
     });

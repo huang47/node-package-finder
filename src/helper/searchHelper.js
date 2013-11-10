@@ -58,6 +58,9 @@ function getPackageWeight(packageName) {
   // activities: c = (weekC / 7) + (monthC / 30) / 2 + (year / 365) / 4
   //   if > 10 --> 5
   var pkg = dataHelper.getPackageInfo(packageName);
+  if (!pkg) {
+    return 0;
+  }
   var authorScore = getPersonScore(pkg.authors);
   var contributorScore = getPersonScore(pkg.contributors);
   var maintainerScore = getPersonScore(pkg.maintainers);
@@ -71,10 +74,10 @@ function getPackageWeight(packageName) {
   }
   var activities = 0;
   if (pkg.commits) {
-    activities = pkg.commits.lastWeek / 7 + pkg.commits.lastMonth / 60 + pkg.commits.lastYear / 1460;
+    activities = pkg.commits.week / 7 + pkg.commits.month / 60 + pkg.commits.year / 1460;
     activities = Math.min(10, activities) * 0.5;
   }
-  return (people + stars + downloads + activities) / 30;
+  return (people + stars + downloads + activities) / 20;
 }
 
 /**
@@ -97,9 +100,6 @@ function getPersonScore(persons) {
       f = (Math.min(100, p.followers) / 10) || 0;
       c = Math.min(10, (p.contributions.year / 24) + p.contributions.month);
       r = _.reduce(p.repos, function(s, repo) {
-        return repo.starts > 30 ? s + 1 : s;
-      }, 0);
-      score += (f + c + r) / 3;
     }
   });
   return score / persons.length;
@@ -107,4 +107,7 @@ function getPersonScore(persons) {
 
 module.exports.queryPackages = queryPackages;
 module.exports.searchPackage = searchPackage;
+module.exports.internals = {
+  getPackageWeight: getPackageWeight
+};
 

@@ -4,8 +4,9 @@ const traverse = require('traverse');
 const metaFile = __dirname + '/../../jsonData/client-template.json';
 const githubRepoFile = __dirname + '/../../jsonData/pkg_github.json';
 const rawPkgs = traverse(require('../npm-all-1108.json'));
+const userInfoFile = __dirname + '/../../jsonData/user_github.json';
 
-var metadata, githubRepos;
+var metadata, githubRepos, userInfo;
 
 function getSearchMetadata() {
   if (!metadata) {
@@ -25,6 +26,10 @@ function updateMetadata() {
 
 function updateGithubReposInfo() {
   githubRepos = JSON.parse(fs.readFileSync(githubRepoFile));
+}
+
+function updateUserInfo() {
+  userInfo = JSON.parse(fs.readFileSync(userInfoFile));
 }
 
 function getAllGithubUsers() {
@@ -55,6 +60,9 @@ function getAllGithubUsers() {
  * }
  */
 function getPackageInfo(packageName) {
+  if (!githubRepos) {
+    updateGithubReposInfo();
+  }
   return githubRepos[packageName];
 }
 
@@ -72,11 +80,10 @@ function getPackageInfo(packageName) {
  * }
  */
 function getPersonInfo(id) {
-  return {
-    followers: 100,
-    contributions: { year: 300, month: 20 },
-    repos: [ { name: 'a', stars: 3 } ]
-  };
+  if (!userInfo) {
+    updateUserInfo();
+  }
+  return userInfo[id];
 }
 
 
@@ -86,5 +93,6 @@ module.exports.getPackageInfo = getPackageInfo;
 module.exports.getPersonInfo = getPersonInfo;
 module.exports.updateMetadata = updateMetadata;
 module.exports.updateGithubReposInfo = updateGithubReposInfo;
+module.exports.updateUserInfo = updateUserInfo;
 module.exports.getGitHubUrl = getGitHubUrl;
 module.exports.getAllGithubUsers = getAllGithubUsers;
