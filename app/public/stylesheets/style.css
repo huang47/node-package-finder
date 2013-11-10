@@ -1,9 +1,10 @@
 body {
     width: 800px;
     margin: 0 auto;
+    background-color: #fafafc;
 }
 
-form {
+.wrapper {
     text-align: center;
 }
 
@@ -17,6 +18,11 @@ iframe {
   position: absolute;
   left: 100px;
   top: 40px;
+}
+
+.progress {
+    position: relative;
+    width: 100%;
 }
 
 .hide {

@@ -67,10 +67,12 @@
     }
 
     function render(query) {
+
         while(list.firstChild) { list.removeChild(list.firstChild); }
 
         injectScript(['', 'search', query].join('/'));
     }
 
     input.getKeys().subscribe(render);
+
 }(this));
