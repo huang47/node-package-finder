@@ -206,7 +206,7 @@ function getContributions(githubId) {
 
 // return [ {name:<reponame>, starts:<number of stars>}, ... ]
 function getRepos(githubId) {
-  var url = GITHUB_PREFIX + 'users/' + githubId + '/repos?per_page=10&type=owner&sort=updated';
+  var url = GITHUB_PREFIX + 'users/' + githubId + '/repos?per_page=50&type=owner&sort=updated';
   return getRequest()(url)
     .then(function(res) {
       var statusCode = res[0].statusCode;
