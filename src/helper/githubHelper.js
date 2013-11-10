@@ -23,7 +23,7 @@ function getRequest() {
  * Get Repo Info
  *
  * @param url {string} e.g. 'https://github.com/huang47/tasq.git'
- * @return {
+ * @return {object} { pkgName: {
  *   downloads: { day: <number>, week: <number>, month: <number> }, --> npm
  *   author: [ 'github id', ... ],
  *   contributors: [ 'github id', ... ],
@@ -33,11 +33,11 @@ function getRequest() {
  *   commitTs: <string last commit ts>,
  *   issues: { open: <number>, close: <number>, lastUpdated: <string ts> },
  *   commits: { week: <number>, month: <number>, year: <number> }
- * }
+ * } }
  */
-var repoUrlRegExp = /github.com\/(.+)(\.git)?/i;
+var repoUrlRegExp = /github.com\/(.+)(\.git?)/i;
 var authorRegExp = /(.+)\/.*/i;
-function getRepoInfo(url) {
+function getRepoInfo(name, url) {
   var m = repoUrlRegExp.exec(url);
   var fullName = m === null ? null : m[1];
   m = authorRegExp.exec(fullName);
@@ -45,7 +45,12 @@ function getRepoInfo(url) {
   if (!m) {
     return null;
   }
-  return getRepoInfoFromFullName(fullName, author);
+  return getRepoInfoFromFullName(fullName, author)
+    .then(function(data) {
+      var ret = {};
+      ret[name] = data;
+      return ret;
+    });
 }
 
 /**
@@ -201,7 +206,7 @@ function getContributions(githubId) {
 
 // return [ {name:<reponame>, starts:<number of stars>}, ... ]
 function getRepos(githubId) {
-  var url = GITHUB_PREFIX + 'users/' + githubId + '/repos';
+  var url = GITHUB_PREFIX + 'users/' + githubId + '/repos?per_page=10&type=owner&sort=updated';
   return getRequest()(url)
     .then(function(res) {
       var statusCode = res[0].statusCode;
