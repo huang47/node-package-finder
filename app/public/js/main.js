@@ -8,13 +8,9 @@
         template = new Template('#template-search-result');
 
     function render(query) {
-        var tokens = query.split(' ');
+        template.one('.l-box').innerHTML = query;
+        template.prependTo(list);
     }
 
-    input.getKeys().subscribe(
-        function (query) {
-            template.one('.l-box').innerHTML = query;
-            template.prependTo(list);
-        }
-    );
+    input.getKeys().subscribe(render);
 }());

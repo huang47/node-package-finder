@@ -1,8 +1,18 @@
 body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    width: 800px;
+    margin: 0 auto;
+    font-size: 2em;
 }
 
-a {
-  color: #00B7FF;
+form {
+    text-align: center;
+}
+
+input[name="search"] {
+    width: 80%;
+    margin-top: 20px;
+}
+
+/* search result */
+.sr {
 }
