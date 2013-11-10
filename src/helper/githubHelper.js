@@ -64,11 +64,11 @@ function getRepoInfo(name, url) {
  * Get User Info
  *
  * @param githubId
- * @return {
+ * @return { githubId : {
  *   followers: {number} the number of followers,
  *   contributions: { year: <contributions in one year>, month: <contributions in one month> },
  *   repos: [ { name: <repo name>, stars: <number of stars> }, ... ]
- * }
+ * } }
  */
 function getUserInfo(githubId) {
   var followerCounts = getFollowerCount(githubId);
@@ -76,11 +76,13 @@ function getUserInfo(githubId) {
   var repos = getRepos(githubId);
   return q.all([followerCounts, contributions, repos])
     .spread(function(f, c, r) {
-      return {
+      var ret = {};
+      ret[githubId] = {
         followers: f,
         contributions: c,
         repos: r
       };
+      return ret;
     });
 }
 

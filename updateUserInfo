@@ -1,0 +1,5 @@
+#!/usr/bin/env node
+
+const dataFetcher = require('./src/dataFetcher');
+
+dataFetcher.updateGithubUsers();

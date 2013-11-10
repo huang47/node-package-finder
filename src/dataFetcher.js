@@ -7,13 +7,13 @@ const dataHelper = require('./helper/dataHelper');
 
 const OUTPUT_DIR = __dirname + '/../output/';
 
-var pkgs;
+var pkgs, users;
 var index;
 var lastPromise;
 var allPromises;
 var scheduleId;
 
-function canFirePkgReq() {
+function canFireReq() {
   if (!lastPromise) {
     return true;
   }
@@ -23,8 +23,35 @@ function canFirePkgReq() {
   return false;
 }
 
+function fireUserRequest() {
+  if (canFireReq()) {
+    var id = users[index++];
+    console.log('getting user', id, 'current index', index);
+    var userInfo = githubHelper.getUserInfo(id);
+    if (userInfo != null) {
+      allPromises.push(userInfo);
+    }
+    lastPromise = userInfo;
+    // consider to write partial data
+    if (index === users.length) {
+      q.all(allPromises).done(function (array) {
+        var fileName = OUTPUT_DIR + 'user_github.json';
+        var ret = {};
+        _.each(array, function(d) {
+          ret = _.merge(ret, d);
+        });
+        console.log('User Info Size', Object.keys(ret).length);
+        fs.writeFileSync(fileName, JSON.stringify(ret));
+        console.log('Update User Info is done');
+      });
+      // unschedule
+      clearInterval(scheduleId);
+    }
+  }
+}
+
 function firePkgRequest() {
-  if (canFirePkgReq()) {
+  if (canFireReq()) {
     var name = pkgs[index++];
     var url = dataHelper.getGitHubUrl(name);
     console.log('getting pkg', name, 'current index', index);
@@ -51,6 +78,18 @@ function firePkgRequest() {
   }
 }
 
+function updateGithubUsers() {
+  if (scheduleId) {
+    console.log('previous job is still running');
+    return;
+  }
+
+  users = dataHelper.getAllGithubUsers().slice(0, 100);
+  index = 0;
+  allPromises = [];
+  scheduleId = setInterval(fireUserRequest, 500); // fire every 200ms
+}
+
 function updatePackageInfoFromGitHub() {
   if (scheduleId) {
     console.log('previous job is still running');
@@ -63,4 +102,6 @@ function updatePackageInfoFromGitHub() {
 }
 
 
+
 module.exports.updatePackageInfoFromGitHub = updatePackageInfoFromGitHub;
+module.exports.updateGithubUsers = updateGithubUsers;

@@ -1,9 +1,12 @@
 const fs = require('fs');
+const _ = require('lodash');
 const traverse = require('traverse');
 const metaFile = __dirname + '/../../jsonData/client-template.json';
+const githubRepoFile = __dirname + '/../../jsonData/pkg_github.json';
 const rawPkgs = traverse(require('../npm-all-1108.json'));
 
-var metadata;
+var metadata, githubRepos;
+
 function getSearchMetadata() {
   if (!metadata) {
     updateMetadata();
@@ -11,12 +14,30 @@ function getSearchMetadata() {
   return metadata;
 }
 
+
 function getGitHubUrl(key) {
   return rawPkgs.get([ key, 'repository', 'url' ]);
 }
 
 function updateMetadata() {
   metadata = JSON.parse(fs.readFileSync(metaFile));
+}
+
+function updateGithubReposInfo() {
+  githubRepos = JSON.parse(fs.readFileSync(githubRepoFile));
+}
+
+function getAllGithubUsers() {
+  if (!githubRepos) {
+    updateGithubReposInfo();
+  }
+  var users = _.reduce(githubRepos, function(ret, repo) {
+    _.each(repo.authors, function(id) { ret[id] = true; });
+    _.each(repo.contributors, function(id) { ret[id] = true; });
+    _.each(repo.maintainers, function(id) { ret[id] = true; });
+    return ret;
+  }, {});
+  return Object.keys(users);
 }
 
 /**
@@ -34,18 +55,7 @@ function updateMetadata() {
  * }
  */
 function getPackageInfo(packageName) {
-  console.log(packageName);
-  return {
-    downloads: { lastDay: 10, lastWeek: 20, lastMonth: 30 },
-    authors: [ 'a', 'b', 'c' ],
-    contributors: ['d', 'e', 'f'],
-    maintainers: [ 'g', 'h', 'i'],
-    stars: 10,
-    watches: 20,
-    commitTs: Date.now(),
-    issues: { open: 2, close: 20, lastUpdated: Date.now() },
-    commits: { lastWeek: 20, lastMonth: 10, lastYear: 100 }
-  };
+  return githubRepos[packageName];
 }
 
 /**
@@ -75,4 +85,6 @@ module.exports.getSearchMetadata = getSearchMetadata;
 module.exports.getPackageInfo = getPackageInfo;
 module.exports.getPersonInfo = getPersonInfo;
 module.exports.updateMetadata = updateMetadata;
+module.exports.updateGithubReposInfo = updateGithubReposInfo;
 module.exports.getGitHubUrl = getGitHubUrl;
+module.exports.getAllGithubUsers = getAllGithubUsers;
