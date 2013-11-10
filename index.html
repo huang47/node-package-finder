@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>NPM FiNDER</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.3.0/pure-min.css">
+    <link href="./lib/client/css/custom.css" rel="stylesheet">
+    <script type="text/javascript" src="./lib/client/rx.js"></script>
+    <script type="text/javascript" src="./lib/client/rx.time.js"></script>
+    <script type="text/javascript" src="./lib/client/input.js"></script>
+    <script type="text/javascript" src="./lib/client/template.js"></script>
+    <script type="application/json" src="./output/promise.json"></script>
+    <template id="template-search-result">
+        <li class="pure-u-1 l-centered">
+            <div class="l-box"></div>
+        </li>
+    </template>
+</head>
+<body class="pure-g-r">
+    <form class="pure-form pure-u-1">
+        <input type="search" name="search" class="pure-input-rounded l-centered" placeholder="find a npm">
+    </form>
+    <ol name="results" class="pure-u-1"></ol>
+    <script type="text/javascript" src="./lib/client/main.js"></script>
+</body>
+</html>

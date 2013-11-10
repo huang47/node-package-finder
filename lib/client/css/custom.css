@@ -1,0 +1,11 @@
+body {
+    font-size: 2em;
+}
+
+form {
+    text-align: center;
+}
+
+input[name="search"] {
+    margin-top: 20px;
+}
