@@ -13,8 +13,25 @@ input[name="search"] {
     margin-top: 20px;
 }
 
+.hide {
+    display: none;
+}
+
 /* search result */
 .sr {
+    display: block;
+    overflow: hidden;
+    text-decoration: none;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.sr:hover {
+    background-color: #ddeeff;
+}
+
+.sr:visited {
+    color: black;
 }
 
 .sr i.fa {
@@ -22,9 +39,9 @@ input[name="search"] {
 }
 
 .sr h2 {
-    font-size: 1.4em;
+    font-size: 2em;
     display: inline-block;
-    margin-right: 10px;
+    margin: 0 0 10px 0;
 }
 
 .fa-travis-ci {

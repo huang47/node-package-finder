@@ -7,59 +7,66 @@
         list = d.querySelector('ol[name="results"]'),
         template = new Template('#template-search-result');
 
-    function getSearchResults(query, cb) {
-        cb([
-            {
-                name: 'express',
-                stars: 1450,
-                author: 'visionmedia',
-                followers: 2000,
-                deps: 300,
-                ci: {
-                    success: true,
-                    time: '2013 11 08'
-                }
-            },
-            {
-                name: 'git-extras',
-                stars: 100,
-                author: 'visionmedia',
-                followers: 2000,
-                deps: 200,
-                ci: {
-                    success: true,
-                    time: '2013 11 01'
-                }
+    global.ciCb = function (data) {
+        var node = list.querySelector('li:nth-child(' + (parseInt(data.index, 10) + 1) + ') .test-result');
+        if (node) {
+            node.classList.add('true' === data.success ? 'fa-check' : 'fa-times');
+            node.textContent = data.time;
+        }
+    };
+
+    global.searchResultCb = function(results) {
+        results.forEach(function (result, index) {
+            template.one('h2').textContent = result.name;
+            if (result.stars) {
+                template.one('.fa-star').textContent = result.stars;
+            } else {
+                template.one('.fa-star').classList.add('hide');
             }
-        ]);
+
+            template.one('.fa-github').textContent = result.author;
+
+            if (result.followers) {
+                template.one('.fa-users').textContent = result.followers;
+            } else {
+                template.one('.fa-users').classList.add('hide');
+            }
+
+            if (result.score) {
+                template.one('.fa-certificate').textContent = result.score;
+            } else {
+                template.one('.fa-certificate').classList.add('hide');
+            }
+
+            template.appendTo(list);
+
+            (function updateCi(i) {
+                injectScript(['', 'package', result.name, result.author, 'ci', i].join('/'));
+            }(index));
+
+            (function updateDeps(i) {
+                injectScript(['', 'package', result.name, 'depscount', i].join('/'));
+            }(index));
+        });
     }
 
-    global.searchResultCb = function (data) {
+    global.dependentsCb = function (data) {
         var node = list.querySelector('li:nth-child(' + (parseInt(data.index, 10) + 1) + ') .fa-heart');
         if (node) {
             node.textContent = data.number;
         }
     };
 
+    function injectScript(src) {
+        var s = d.createElement('script');
+        s.src = src;
+        d.body.appendChild(s);
+    }
+
     function render(query) {
         while(list.firstChild) { list.removeChild(list.firstChild); }
-        getSearchResults(query, function (results) {
-            results.forEach(function (result, index) {
-                template.one('h2').textContent = result.name;
-                template.one('.fa-star').textContent = result.stars;
-                template.one('.fa-github').textContent = result.author;
-                template.one('.fa-users').textContent = result.followers;
-                template.one('.test-result').classList.add(result.ci.success ? 'fa-check' : 'fa-times');
-                template.one('.test-result').textContent = result.ci.time;
-                template.appendTo(list);
 
-                (function updateDeps(node, i) {
-                    var s = d.createElement('script');
-                    s.src = ['', 'package', result.name, 'depscount', i].join('/');
-                    d.body.appendChild(s);
-                }(template.one('.fa-heart'), index));
-            });
-        });
+        injectScript(['', 'search', query].join('/'));
     }
 
     input.getKeys().subscribe(render);

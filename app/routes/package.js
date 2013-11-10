@@ -32,9 +32,8 @@ exports.search = function (req, res) {
     var p = req.params.package,
         result;
 
-    res.setHeader('Content-Type', 'application/json');
     result = search.queryPackages(p) || FREEZE_EMPTY_ARRAY;
-    res.end(JSON.stringify(search.queryPackages(p)));
+    res.json(result);
 };
 
 exports.top = function (req, res) {
@@ -57,7 +56,7 @@ exports.dependents = function (req, res) {
 
     getDeps(p, function (deps) {
         res.setHeader('Content-Type', 'application/json');
-        res.end('searchResultCb' + index + '(' +JSON.stringify(deps) + ')');
+        res.end('dependentsCb' + index + '(' +JSON.stringify(deps) + ')');
         res.end(JSON.stringify(deps));
     });
 };
@@ -68,7 +67,7 @@ exports.depscount = function (req, res) {
 
     getDeps(p, function (deps) {
         res.setHeader('Content-Type', 'application/json');
-        res.end('searchResultCb(' + JSON.stringify({ number: deps.length, index: index }) + ')');
+        res.end('dependentsCb(' + JSON.stringify({ number: deps.length, index: index }) + ')');
     });
 };
 
@@ -81,26 +80,30 @@ exports.ci = function (req, res) {
         url: TRAVIS_CI_API.replace(/{author}/, author),
         timeout: 3000
     }, function (e, data) {
-        var result;
+        var results = []
 
         res.setHeader('Content-Type', 'application/json');
 
         if (e) {
-            res.json([]);
+            res.end('');
         }
 
         result = JSON.parse(data.body).
             filter(function (repo) {
-                console.log(repo, author + '/' + package);
-                return repo.slug === (author + '/' + package);
+                return repo.slug === [author, package].join('/');
             }).
             map(function (repo) {
                 return {
                     success: repo.last_build_status === 0,
-                    time: repo.last_build_finished_at
+                    time: repo.last_build_finished_at,
+                    index: index
                 };
             });
             
-        res.json(result[0]);
+        if (results.length > 0) {
+            res.end('ciCb(' + JSON.stringify(results[0]) + ')');
+        } else {
+            res.end('');
+        }
     });
 }

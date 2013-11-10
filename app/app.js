@@ -48,7 +48,7 @@ app.get('/package/:package', package.search);
 app.get('/package/:package/top', package.top);
 app.get('/package/:package/dependents/:index', package.dependents);
 app.get('/package/:package/depscount/:index', package.depscount);
-app.get('/package/:package/:author/ci', package.ci);
+app.get('/package/:package/:author/ci/:index', package.ci);
 
 module.exports.configure = configure;
 module.exports.start = start;
