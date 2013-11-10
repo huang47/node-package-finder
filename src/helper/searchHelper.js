@@ -25,7 +25,7 @@ function searchPackage(query) {
     var supportiveData = dataHelper.getSupportiveData(pkg.name);
     _.merge(pkg, supportiveData);
   });
-  return _.sortBy(ret, 'score').reverse();
+  return _.sortBy(ret, 'score').reverse().slice(0, 10);
 }
 
 /**
@@ -152,7 +152,6 @@ function getPersonScore(persons) {
       r = _.reduce(p.repos, function(s, repo) {
         return repo.stars > 30 ? s + 1 : s;
       }, 0);
-      console.log(id, f, c, r);
       score += (f + c + r) / 3;
     }
   });
