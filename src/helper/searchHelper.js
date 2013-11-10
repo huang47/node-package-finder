@@ -100,9 +100,9 @@ function getPersonScore(persons) {
       f = (Math.min(100, p.followers) / 10) || 0;
       c = Math.min(10, (p.contributions.year / 24) + p.contributions.month);
       r = _.reduce(p.repos, function(s, repo) {
-            console.log(repo, 'repo');
-          return s;
+        return repo.starts > 30 ? s + 1 : s;
       }, 0);
+      score += (f + c + r) / 3;
     }
   });
   return score / persons.length;
