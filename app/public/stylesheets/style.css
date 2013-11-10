@@ -39,11 +39,12 @@ input[name="search"] {
 }
 
 .sr [class *="fa-"]:before {
-    margin-right: 1em;
+    margin-right: 0.5em;
 }
 
 .sr i.fa {
     font-family: FontAwesome;
+    margin-bottom: 0.5em;
 }
 
 .sr h2 {

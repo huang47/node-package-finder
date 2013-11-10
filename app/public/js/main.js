@@ -44,10 +44,10 @@
             template.appendTo(list);
 
             (function updateCi(i) {
-                injectScript(['', 'package', result.name, result.author, 'ci', i].join('/'));
-            }(index));
+                if (result.name && result.author) {
+                    injectScript(['', 'package', result.name, result.author, 'ci', i].join('/'));
+                }
 
-            (function updateDeps(i) {
                 injectScript(['', 'package', result.name, 'depscount', i].join('/'));
             }(index));
         });
