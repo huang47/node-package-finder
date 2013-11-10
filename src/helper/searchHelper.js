@@ -70,8 +70,8 @@ function sumThemAll(queryResults) {
 
 function weightedByPackage(queryResults) {
   return _.map(queryResults, function(pkg) {
-    var weight = getPackageWeight(pkg.name);
-    pkg.score *= 1 + Math.min(0.01, weight);
+    var weight = getPackageWeight(pkg.name) + 1;
+    pkg.score *= weight;
     return pkg;
   });
 }
@@ -100,8 +100,8 @@ function getSumScoreByPackage(name) {
 }
 
 function getPackageWeight(packageName) {
-  // score: people(10) stars (10) downloads(5) activities(5)
-  // people: avg. score of author, contributors and maintainers
+  // score: people(30) stars (30) downloads(0) activities(10)
+  // people: author score(20) + contributor count > 5 (10) --> 30 in total
   // stars: 30 ~ 100 --> 6 --> 10 > 100 --> 20
   // downloads: > 50 --> 5
   // activities: c = (weekC / 7) + (monthC / 30) / 2 + (year / 365) / 4
@@ -111,12 +111,12 @@ function getPackageWeight(packageName) {
     // try to use author score
     var author = dataHelper.getAuthorByPackage(packageName);
     var authorScore = getPersonScore([ author ]) || 0;
-    return authorScore;
+    return authorScore / 35;
   }
   var authorScore = getPersonScore(pkg.authors);
   var contributorCount = pkg.contributors && pkg.contributors.length || 0;
-  var people = (authorScore + contributorCount) / 2;
-  var stars = pkg.stars < 30 ? pkg.stars * (6 / 30) : 6 + Math.min(100, pkg.stars) * (4 / 70);
+  var people = authorScore + Math.min(5, contributorCount) * 2;
+  var stars = Math.min(200, pkg.stars) * 0.1;
   var downloads = 0;
   if (pkg.downloads) {
     downloads = pkg.downloads.lastDay + pkg.downloads.lastWeek / 14 + pkg.downloads.lastMonth / 60;
@@ -124,10 +124,10 @@ function getPackageWeight(packageName) {
   }
   var activities = 0;
   if (pkg.commits) {
-    activities = pkg.commits.week / 7 + pkg.commits.month / 60 + pkg.commits.year / 1460;
-    activities = Math.min(10, activities) * 0.5;
+    activities = pkg.commits.week + pkg.commits.month / 2 + pkg.commits.year / 4;
+    activities = Math.min(20, activities);
   }
-  return (people + stars + downloads + activities) / 20;
+  return (people + stars + downloads + activities) / 40;
 }
 
 /**
@@ -141,7 +141,7 @@ function getPersonScore(persons) {
   // person
   // followers > 0 ~ 30 --> 1 ~ 10,
   // contributions --> > 10 month --> 5
-  // pop repo (over 30 starts) > 3 --> 10
+  // pop repo (over 30 stars) > 3 --> 10
   // total score = (f + c + p) / 3
   var score = 0, f, c, r;
   persons.forEach(function (id) {
@@ -152,7 +152,7 @@ function getPersonScore(persons) {
       r = _.reduce(p.repos, function(s, repo) {
         return repo.stars > 30 ? s + 1 : s;
       }, 0);
-      score += (f + c + r) / 3;
+      score += (f + c) / 2 + Math.min(10, r);
     }
   });
   return score / persons.length;
