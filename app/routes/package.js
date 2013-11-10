@@ -86,6 +86,7 @@ exports.ci = function (req, res) {
 
         if (e || !data || !data.body) {
             res.end('');
+            return;
         }
 
         results = JSON.parse(data.body).
