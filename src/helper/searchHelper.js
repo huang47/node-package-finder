@@ -42,8 +42,8 @@ function queryPackages(query) {
   }
   return _.reduce(dataHelper.getSearchMetadata(), function(result, pkg, name) {
     var score = _.reduce(words, function(s, word) {
-      var regex = new RegExp(word, 'im');
-      if (regex.exec(pkg.keywords)) {
+      var regex = new RegExp(word, 'i');
+      if (regex.exec(pkg.keyword)) {
         s += KEYWORD_SCORE;
       } else if (regex.exec(pkg.desc) || regex.exec(pkg.readme)) {
         s += DESC_SCORE;
