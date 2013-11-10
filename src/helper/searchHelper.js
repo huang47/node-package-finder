@@ -19,8 +19,8 @@ const DERIVED_SCORE = 1;
  */
 function searchPackage(query) {
   var rawResults = queryPackages(query);
-  //var ret = weightedByPackage(rawResults);
-  var ret = sumThemAll(rawResults);
+  var ret = weightedByPackage(rawResults);
+  //var ret = sumThemAll(rawResults);
   _.each(ret, function(pkg) {
     var supportiveData = dataHelper.getSupportiveData(pkg.name);
     _.merge(pkg, supportiveData);
@@ -116,8 +116,7 @@ function getPackageWeight(packageName) {
   var authorScore = getPersonScore(pkg.authors);
   var contributorCount = pkg.contributors && pkg.contributors.length || 0;
   var people = (authorScore + contributorCount) / 2;
-  var stars = pkg.stars < 30 ? pkg.stars * (6 / 30) :
-    6 + pkg.stars * (4 / 70);
+  var stars = pkg.stars < 30 ? pkg.stars * (6 / 30) : 6 + Math.min(100, pkg.stars) * (4 / 70);
   var downloads = 0;
   if (pkg.downloads) {
     downloads = pkg.downloads.lastDay + pkg.downloads.lastWeek / 14 + pkg.downloads.lastMonth / 60;
@@ -164,5 +163,6 @@ module.exports.queryPackages = queryPackages;
 module.exports.searchPackage = searchPackage;
 module.exports.internals = {
   getPackageWeight: getPackageWeight,
+  sumThemAll: sumThemAll,
   getPersonScore: getPersonScore
 };

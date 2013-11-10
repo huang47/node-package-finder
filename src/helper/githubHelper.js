@@ -210,14 +210,22 @@ function getContributors(url) {
 
 // return a promise which will have follower count
 function getFollowerCount(githubId) {
-  var url = GITHUB_PREFIX + 'users/' + githubId + '/followers';
+  var url = GITHUB_PREFIX + 'users/' + githubId;
   var options = {
     url: url,
     method: 'GET',
     qs: SECRETE
   };
   return getRequest()(options)
-    .then(getCount)
+    .then(function(res) {
+      printLimits(res);
+      var statusCode = res[0].statusCode;
+      if (statusCode >= 200 && statusCode < 400) {
+        var userInfo = JSON.parse(res[0].body);
+        return userInfo.followers || 0;
+      }
+      throw new Error('Get url ' + url + ' failed: ' + statusCode + ' ' + res[0].body);
+    })
     .fail(defaultTo(0));
 }
 

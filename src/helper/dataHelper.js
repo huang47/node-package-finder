@@ -15,15 +15,21 @@ function getSearchMetadata() {
   return metadata;
 }
 
+function getAuthorByPackage(pkgName) {
+  var pkgTr = traverse(getPackageInfo(pkgName));
+  var author = pkgTr.get([ 'authors', 0 ]);
+  if (!author) {
+    var metadataTr = traverse(getSearchMetadata());
+    author = metadataTr.get([ pkgName, 'author']);
+  }
+  return author;
+
+}
+
 function getSupportiveData(pkgName) {
   var pkgTr = traverse(getPackageInfo(pkgName));
-  var metadataTr = traverse(getSearchMetadata());
-  var author = pkgTr.get([ 'authors', 0 ]);
+  var author = getAuthorByPackage(pkgName);
   var stars = pkgTr.get(['stars']);
-  if (!author) {
-    author = metadataTr.get([ pkgName, 'author']);
-    //TODO update repo info in next tick
-  }
   var authorInfo = getPersonInfo(author);
   var followers = (authorInfo && authorInfo.followers);
 
@@ -104,7 +110,12 @@ function getPersonInfo(id) {
   return userInfo[id];
 }
 
-
+function getAllUserInfo() {
+  if (!userInfo) {
+    updateUserInfo();
+  }
+  return userInfo;
+}
 
 module.exports.getSearchMetadata = getSearchMetadata;
 module.exports.getPackageInfo = getPackageInfo;
@@ -114,4 +125,6 @@ module.exports.updateGithubReposInfo = updateGithubReposInfo;
 module.exports.updateUserInfo = updateUserInfo;
 module.exports.getGitHubUrl = getGitHubUrl;
 module.exports.getAllGithubUsers = getAllGithubUsers;
-module.exports. getSupportiveData = getSupportiveData;
+module.exports.getSupportiveData = getSupportiveData;
+module.exports.getAuthorByPackage = getAuthorByPackage;
+module.exports.getAllUserInfo = getAllUserInfo;
