@@ -78,19 +78,14 @@ describe('Package', function () {
         });
     });
 
-    describe('getData', function () {
-        it('should update readme and return an object', function (done) {
-            this.timeout(10000);
+    describe('data', function () {
+        it('should update readme and return an object', function () {
             var package;
             
             package = new Package(source.packagesMap['html-truncate']);
 
-            package.getData(function (err, data) {
-                ['name', 'keyword', 'derivedKeywords', 'author', 'desc', 'readme'].forEach(function (k) {
-                    console.log(data[k], k);
-                    A.strictEqual('string', typeof data[k]);
-                });
-                done();
+            ['name', 'keyword', 'derivedKeywords', 'author', 'desc'].forEach(function (k) {
+                A.strictEqual('string', typeof package.data[k]);
             });
         });
     });
