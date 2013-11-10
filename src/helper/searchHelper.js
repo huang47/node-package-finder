@@ -116,7 +116,8 @@ function getPackageWeight(packageName) {
   var authorScore = getPersonScore(pkg.authors);
   var contributorCount = pkg.contributors && pkg.contributors.length || 0;
   var people = authorScore + Math.min(5, contributorCount) * 2;
-  var stars = Math.min(200, pkg.stars) * 0.1;
+  var stars = (pkg && pkg.stars) || 0;
+  stars = Math.min(200, stars) * 0.1;
   var downloads = 0;
   if (pkg.downloads) {
     downloads = pkg.downloads.lastDay + pkg.downloads.lastWeek / 14 + pkg.downloads.lastMonth / 60;
