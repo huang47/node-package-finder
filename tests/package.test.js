@@ -77,4 +77,21 @@ describe('Package', function () {
             A.strictEqual('express,framework,sinatra,web,rest,restful,router,app,api,http,client,rest-template,spring,cujojs,connect,middleware,route,micro,rack,ender,routes,routing,cluster,modules,builder,packager,server,spark,fugue,tcp,workers,module,require,commonjs,amd,dependency,package installer,installer,package,bundle,bundler,httpd,worker,queue,requirejs,wizard,package.json', package.derivedKeywords);
         });
     });
+
+    describe('getData', function () {
+        it('should update readme and return an object', function (done) {
+            this.timeout(10000);
+            var package;
+            
+            package = new Package(source.packagesMap['html-truncate']);
+
+            package.getData(function (err, data) {
+                ['name', 'keyword', 'derivedKeywords', 'author', 'desc', 'readme'].forEach(function (k) {
+                    console.log(data[k], k);
+                    A.strictEqual('string', typeof data[k]);
+                });
+                done();
+            });
+        });
+    });
 });
