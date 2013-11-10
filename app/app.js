@@ -46,8 +46,8 @@ app.get('/search/:query', search.search);
 app.get('/users', user.list);
 app.get('/package/:package', package.search);
 app.get('/package/:package/top', package.top);
-app.get('/package/:package/dependents', package.dependents);
-app.get('/package/:package/depscount', package.depscount);
+app.get('/package/:package/dependents/:index', package.dependents);
+app.get('/package/:package/depscount/:index', package.depscount);
 app.get('/package/:package/:author/ci', package.ci);
 
 module.exports.configure = configure;

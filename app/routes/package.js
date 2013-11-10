@@ -52,26 +52,30 @@ exports.top = function (req, res) {
 };
 
 exports.dependents = function (req, res) {
-    var p = req.params.package;
+    var p = req.params.package,
+        index = req.params.index;
 
     getDeps(p, function (deps) {
         res.setHeader('Content-Type', 'application/json');
+        res.end('searchResultCb' + index + '(' +JSON.stringify(deps) + ')');
         res.end(JSON.stringify(deps));
     });
 };
 
 exports.depscount = function (req, res) {
-    var p = req.params.package;
+    var p = req.params.package,
+        index = req.params.index;
 
     getDeps(p, function (deps) {
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(deps.length));
+        res.end('searchResultCb(' + JSON.stringify({ number: deps.length, index: index }) + ')');
     });
 };
 
 exports.ci = function (req, res) {
     var author = req.params.author;
     var package = req.params.package;
+    var index = req.params.index;
 
     request({
         url: TRAVIS_CI_API.replace(/{author}/, author),
@@ -82,7 +86,7 @@ exports.ci = function (req, res) {
         res.setHeader('Content-Type', 'application/json');
 
         if (e) {
-            res.end('[]');
+            res.json([]);
         }
 
         result = JSON.parse(data.body).
@@ -97,6 +101,6 @@ exports.ci = function (req, res) {
                 };
             });
             
-        res.end(JSON.stringify(result[0]));
+        res.json(result[0]);
     });
 }
