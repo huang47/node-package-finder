@@ -1,7 +1,7 @@
 /*global window, Rx*/
 /*jslint nomen:true*/
 
-(function (global, undefined) {
+(function (exports, undefined) {
     'use strict';
 
     function isBoolean(o) {
@@ -184,6 +184,6 @@
         }
     };
 
-    global.Input = Input;
+    exports.Input = Input;
 
-}(window));
+}(this));
