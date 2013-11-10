@@ -72,6 +72,7 @@ function weightedByPackage(queryResults) {
   return _.map(queryResults, function(pkg) {
     var weight = getPackageWeight(pkg.name) + 1;
     pkg.score *= weight;
+    pkg.score = pkg.score.toFixed(2);
     return pkg;
   });
 }

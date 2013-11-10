@@ -102,5 +102,36 @@ function updatePackageInfoFromGitHub() {
   scheduleId = setInterval(firePkgRequest, 500); // fire every 200ms
 }
 
+const githubRepoFile = __dirname + '/../jsonData/pkg_github.json';
+const batchSize = 100;
+
+function batchGetPackage() {
+  var repos = dataHelper.getAllPkgInfos();
+  dataHelper.getSearchMetadata();
+  var ind = 0;
+  var allPromises = [];
+  var pkgs = Object.keys(dataHelper.getSearchMetadata());
+  for (var i = 0; i < pkgs.length && ind < batchSize; i++) {
+    var name = pkgs[i];
+    if(!repos[name]) {
+      var url = dataHelper.getGitHubUrl(name);
+      console.log('getting pkg', name, 'current index', index);
+      var repoInfo = githubHelper.getRepoInfo(name, url);
+      if (repoInfo != null) {
+        allPromises.push(repoInfo);
+        ind++;
+      }
+    }
+  }
+  return q.all(allPromises).then(function (data) {
+    _.each(data, function (r) {
+      repos = _.merge(repos, r);
+      fs.writeFileSync(githubRepoFile, JSON.stringify(repos));
+      dataHelper.updateGithubReposInfo();
+    });
+  });
+}
+
 module.exports.updatePackageInfoFromGitHub = updatePackageInfoFromGitHub;
 module.exports.updateGithubUsers = updateGithubUsers;
+module.exports.batchGetPackage = batchGetPackage;

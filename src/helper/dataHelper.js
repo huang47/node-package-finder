@@ -117,6 +117,13 @@ function getAllUserInfo() {
   return userInfo;
 }
 
+function getAllPkgInfos() {
+  if (!githubRepos) {
+    updateGithubReposInfo();
+  }
+  return githubRepos;
+}
+
 module.exports.getSearchMetadata = getSearchMetadata;
 module.exports.getPackageInfo = getPackageInfo;
 module.exports.getPersonInfo = getPersonInfo;
@@ -128,3 +135,4 @@ module.exports.getAllGithubUsers = getAllGithubUsers;
 module.exports.getSupportiveData = getSupportiveData;
 module.exports.getAuthorByPackage = getAuthorByPackage;
 module.exports.getAllUserInfo = getAllUserInfo;
+module.exports.getAllPkgInfos = getAllPkgInfos;
