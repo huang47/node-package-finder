@@ -25,7 +25,7 @@ function searchPackage(query) {
     var supportiveData = dataHelper.getSupportiveData(pkg.name);
     _.merge(pkg, supportiveData);
   });
-  return _.sortBy(ret, 'score').reverse().slice(0, 10);
+  return _.sortBy(ret, 'score').reverse();
 }
 
 /**
@@ -72,7 +72,7 @@ function weightedByPackage(queryResults) {
   return _.map(queryResults, function(pkg) {
     var weight = getPackageWeight(pkg.name) + 1;
     pkg.score *= weight;
-    pkg.score = pkg.score.toFixed(2);
+    pkg.score = Math.round(pkg.score * 100) / 100;
     return pkg;
   });
 }
