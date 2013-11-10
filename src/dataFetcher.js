@@ -132,6 +132,28 @@ function batchGetPackage() {
   });
 }
 
+const userInfoFile = __dirname + '/../jsonData/user_github.json';
+function updateGithubUsersAndWriteToFile() {
+  var users = dataHelper.getAllGithubUsers();
+  var allUserInfos = dataHelper.getAllUserInfo();
+  var allPromises = [];
+  _.each(users, function(user) {
+    if (!allUserInfos[user]) {
+      var userInfo = githubHelper.getUserInfo(user);
+      if (userInfo != null) {
+        allPromises.push(userInfo);
+      }
+    }
+  });
+  return q.all(allPromises).then(function (data) {
+    _.each(data, function (r) {
+      allUserInfos = _.merge(allUserInfos, r);
+      fs.writeFileSync('./user.json', JSON.stringify(allUserInfos));
+    });
+  });
+}
+
 module.exports.updatePackageInfoFromGitHub = updatePackageInfoFromGitHub;
 module.exports.updateGithubUsers = updateGithubUsers;
+module.exports.updateGithubUsersAndWriteToFile = updateGithubUsersAndWriteToFile;
 module.exports.batchGetPackage = batchGetPackage;
