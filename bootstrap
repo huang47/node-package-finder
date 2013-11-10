@@ -4,6 +4,17 @@ var packages = require('./src/npm-all-1108.json');
 
 var pkgs = Object.keys(packages).map(function (k) { return packages[k]; });
 
+Package = {
+    create: function () {
+    }
+};
+function Package() {}
+
+function contains(query, key) {
+    return function (query) {
+    };
+}
+
 var result = pkgs.
     filter(function (p) {
         return p.description && -1 !== p.description.indexOf('template');
