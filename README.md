@@ -34,6 +34,20 @@ lazy load all other meta info?
 ### top10 package
 
 ```javascript
-/package/top/:package
+route /package/top/:package
 ```
 get top 10 search results on top of 
+
+
+## test results
+```javascript
+/package/:package/:author/ci
+```
+
+get travis-ci test results with following format
+```
+{
+    success: <boolean>,
+    time: <string of last build time>
+}
+```

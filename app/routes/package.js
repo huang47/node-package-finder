@@ -1,7 +1,7 @@
 var FREEZE_EMPTY_ARRAY = Object.freeze([]);
 var request = require('request');
 var search = require('../../src/helper/searchHelper');
-
+var TRAVIS_CI_API = 'https://api.travis-ci.org/repos/{author}';
 
 function getDeps(p, cb) {
     request({
@@ -68,3 +68,35 @@ exports.depscount = function (req, res) {
         res.end(JSON.stringify(deps.length));
     });
 };
+
+exports.ci = function (req, res) {
+    var author = req.params.author;
+    var package = req.params.package;
+
+    request({
+        url: TRAVIS_CI_API.replace(/{author}/, author),
+        timeout: 3000
+    }, function (e, data) {
+        var result;
+
+        res.setHeader('Content-Type', 'application/json');
+
+        if (e) {
+            res.end('[]');
+        }
+
+        result = JSON.parse(data.body).
+            filter(function (repo) {
+                console.log(repo, author + '/' + package);
+                return repo.slug === (author + '/' + package);
+            }).
+            map(function (repo) {
+                return {
+                    success: repo.last_build_status === 0,
+                    time: repo.last_build_finished_at
+                };
+            });
+            
+        res.end(JSON.stringify(result[0]));
+    });
+}
