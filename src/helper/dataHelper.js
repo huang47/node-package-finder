@@ -1,28 +1,22 @@
+const fs = require('fs');
+const traverse = require('traverse');
+const metaFile = __dirname + '/../../jsonData/client-template.json';
+const rawPkgs = traverse(require('../npm-all-1108.json'));
 
+var metadata;
 function getSearchMetadata() {
-  return {
-    q: {
-      keywords: 'q,promises,promises,flow control',
-      desc: 'A library for promises (CommonJS/Promises/A,B,D)',
-      readme: '',
-      derivedKeywords: '',
-      deps: 123
-    },
-    express: {
-      keywords: 'express,framework,sinatra,web,rest,restful,router,app,api',
-      desc: 'Sinatra inspired web development framework',
-      readme: '',
-      derivedKeywords: '',
-      deps: 123
-    },
-    lodash: {
-      keywords: 'amd,browser,client,customize,functional,server,util',
-      desc: 'A utility library delivering consistency, customization, performance, & extras.',
-      readme: '',
-      derivedKeywords: '',
-      deps: 123
-    },
-  };
+  if (!metadata) {
+    updateMetadata();
+  }
+  return metadata;
+}
+
+function getGitHubUrl(key) {
+  return rawPkgs.get([ key, 'repository', 'url' ]);
+}
+
+function updateMetadata() {
+  metadata = JSON.parse(fs.readFileSync(metaFile));
 }
 
 /**
@@ -80,3 +74,5 @@ function getPersonInfo(id) {
 module.exports.getSearchMetadata = getSearchMetadata;
 module.exports.getPackageInfo = getPackageInfo;
 module.exports.getPersonInfo = getPersonInfo;
+module.exports.updateMetadata = updateMetadata;
+module.exports.getGitHubUrl = getGitHubUrl;

@@ -8,15 +8,21 @@ const WEEK_IN_MILLIS =604800000;
 const MONTH_IN_MILLIS = 2592000000;
 const YEAR_IN_MILLIS = 31556952000;
 
+const SECRETE= { 'client_id' : '82581723afe862fece26', 'client_secret' : '921e094906792d2120f47ebd7228dfd5a8afe43f' };
+
 function defaultTo(value) {
   return function(err) {
-    console.error(err);
+    console.error('ERROR', err);
     return value;
   };
 }
 
 function getRequest() {
-  return q.nbind(request.get, request);
+  return q.nbind(request, request);
+}
+
+function printLimits(res) {
+  console.log('req remaining', traverse(res).get([ '0', 'headers', 'x-ratelimit-remaining' ]));
 }
 
 /**
@@ -35,14 +41,15 @@ function getRequest() {
  *   commits: { week: <number>, month: <number>, year: <number> }
  * } }
  */
-var repoUrlRegExp = /github.com\/(.+)(\.git?)/i;
+var repoUrlRegExp = /github.com.(.+)/i;
 var authorRegExp = /(.+)\/.*/i;
 function getRepoInfo(name, url) {
   var m = repoUrlRegExp.exec(url);
-  var fullName = m === null ? null : m[1];
+  var fullName = m === null ? null : m[1].replace('.git', '');
   m = authorRegExp.exec(fullName);
   var author = m === null ? null : m[1];
-  if (!m) {
+  if (fullName === null) {
+    console.error('can not update pkg', name, url);
     return null;
   }
   return getRepoInfoFromFullName(fullName, author)
@@ -80,9 +87,15 @@ function getUserInfo(githubId) {
 // return a promise which will have repo info
 function getRepoInfoFromFullName(fullName, author) {
   var url = GITHUB_PREFIX + 'repos/' + fullName;
-  return q.nbind(request.get, request)(url)
+  var options = {
+    url: url,
+    method: 'GET',
+    qs: SECRETE
+  };
+  return getRequest()(options)
     .then(function(res) {
       var statusCode = res[0].statusCode;
+      printLimits(res);
       if (statusCode >= 200 && statusCode < 400) {
         return JSON.parse(res[0].body);
       }
@@ -115,6 +128,7 @@ function getRepoInfoFromFullName(fullName, author) {
 
 function getCount(res) {
   var statusCode = res[0].statusCode;
+  printLimits(res);
   if (statusCode >= 200 && statusCode < 400) {
     return JSON.parse(res[0].body).length;
   }
@@ -124,17 +138,33 @@ function getCount(res) {
 // { open: <number>, close: <number> }
 function getIssues(url) {
   var req = getRequest();
-  var openIssues = req(url + '?state=open').then(getCount).fail(defaultTo(0));
-  var closedIssues = req(url + '?state=closed').then(getCount).fail(defaultTo(0));
+  var openOpts = {
+    url: url,
+    method: 'GET',
+    qs: _.merge({ state: 'open' }, SECRETE)
+  };
+  var closedOpts = {
+    url: url,
+    method: 'GET',
+    qs: _.merge({ state: 'closed' }, SECRETE)
+  };
+  var openIssues = req(openOpts).then(getCount).fail(defaultTo(0));
+  var closedIssues = req(closedOpts).then(getCount).fail(defaultTo(0));
   return q.all([openIssues, closedIssues]).spread(function(open, close) {
     return { open: open, close: close };
   });
 }
 
 function getCommits(url) {
+  var options = {
+    url: url,
+    method: 'GET',
+    qs: SECRETE
+  };
   var req = getRequest();
-  return req(url).then(function(res) {
+  return req(options).then(function(res) {
     var statusCode = res[0].statusCode;
+    printLimits(res);
     if (statusCode >= 200 && statusCode < 400) {
       var commits = JSON.parse(res[0].body);
       var now = Date.now();
@@ -158,8 +188,14 @@ function getCommits(url) {
 
 // contributors array
 function getContributors(url) {
-  return getRequest()(url)
+  var options = {
+    url: url,
+    method: 'GET',
+    qs: SECRETE
+  };
+  return getRequest()(options)
     .then(function(res) {
+      printLimits(res);
       var statusCode = res[0].statusCode;
       if (statusCode >= 200 && statusCode < 400) {
         var contributors = JSON.parse(res[0].body);
@@ -173,7 +209,12 @@ function getContributors(url) {
 // return a promise which will have follower count
 function getFollowerCount(githubId) {
   var url = GITHUB_PREFIX + 'users/' + githubId + '/followers';
-  return getRequest()(url)
+  var options = {
+    url: url,
+    method: 'GET',
+    qs: SECRETE
+  };
+  return getRequest()(options)
     .then(getCount)
     .fail(defaultTo(0));
 }
@@ -181,7 +222,12 @@ function getFollowerCount(githubId) {
 // return { year: <number of contributions>, month: <number of contributions> }
 function getContributions(githubId) {
   var url = GITHUB_PREFIX + 'users/' + githubId + '/events';
-  return getRequest()(url)
+  var options = {
+    url: url,
+    method: 'GET',
+    qs: SECRETE
+  };
+  return getRequest()(options)
     .then(function(res) {
       var statusCode = res[0].statusCode;
       if (statusCode >= 200 && statusCode < 400) {
@@ -207,9 +253,15 @@ function getContributions(githubId) {
 // return [ {name:<reponame>, starts:<number of stars>}, ... ]
 function getRepos(githubId) {
   var url = GITHUB_PREFIX + 'users/' + githubId + '/repos?per_page=50&type=owner&sort=updated';
-  return getRequest()(url)
+  var options = {
+    url: url,
+    method: 'GET',
+    qs: _.merge({ 'per_page': 50, type: 'owner', sort: 'updated' }, SECRETE)
+  };
+  return getRequest()(options)
     .then(function(res) {
       var statusCode = res[0].statusCode;
+      printLimits(res);
       if (statusCode >= 200 && statusCode < 400) {
         var repos = JSON.parse(res[0].body);
         return _.map(repos, function(repo) {
