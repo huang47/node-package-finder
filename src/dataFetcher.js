@@ -84,7 +84,7 @@ function updateGithubUsers() {
     return;
   }
 
-  users = dataHelper.getAllGithubUsers().slice(0, 100);
+  users = dataHelper.getAllGithubUsers().slice(1000);
   index = 0;
   allPromises = [];
   scheduleId = setInterval(fireUserRequest, 500); // fire every 200ms
