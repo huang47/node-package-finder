@@ -22,8 +22,12 @@ input[name="search"] {
     display: block;
     overflow: hidden;
     text-decoration: none;
-    padding: 20px;
+    padding: 20px 20px 0 20px;
     border-radius: 10px;
+}
+
+.sr {
+    color: black;
 }
 
 .sr:hover {
@@ -34,13 +38,16 @@ input[name="search"] {
     color: black;
 }
 
+.sr [class *="fa-"]:before {
+    margin-right: 1em;
+}
+
 .sr i.fa {
     font-family: FontAwesome;
 }
 
 .sr h2 {
     font-size: 2em;
-    display: inline-block;
     margin: 0 0 10px 0;
 }
 

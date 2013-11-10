@@ -10,13 +10,16 @@
     global.ciCb = function (data) {
         var node = list.querySelector('li:nth-child(' + (parseInt(data.index, 10) + 1) + ') .test-result');
         if (node) {
-            node.classList.add('true' === data.success ? 'fa-check' : 'fa-times');
+            node.classList.add(true === data.success ? 'fa-check' : 'fa-times');
             node.textContent = data.time;
         }
     };
 
     global.searchResultCb = function(results) {
         results.forEach(function (result, index) {
+
+            template.one('a').setAttribute('href', 'https://npmjs.org/package/' + result.name);
+
             template.one('h2').textContent = result.name;
             if (result.stars) {
                 template.one('.fa-star').textContent = result.stars;

@@ -84,13 +84,16 @@ exports.ci = function (req, res) {
 
         res.setHeader('Content-Type', 'application/json');
 
-        if (e) {
+        if (e || !data || !data.body) {
             res.end('');
         }
 
-        result = JSON.parse(data.body).
+        results = JSON.parse(data.body).
             filter(function (repo) {
-                return repo.slug === [author, package].join('/');
+                var str = author + '/' + package;
+                return (repo.slug === str) ||
+                    (repo.slug === str + '.js') ||
+                    (repo.slug === 'node-' + str);
             }).
             map(function (repo) {
                 return {
