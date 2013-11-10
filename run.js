@@ -3,13 +3,14 @@
 process.setMaxListeners(0);
 var Package = require('./lib/package').Package;
 var source = require('./lib/source');
-var testPackages = source.packagesList.slice(0, 100);
-var SIZE = source.packagesList.length;
+var testPackages = source.packagesList;
+var SIZE = testPackages.length;
 var fs = require('fs');
 var BATCH_NUMBER = 10;
 var INTERVAL = 3000;
 var batchRun = 1;
 var results = {};
+var BATCHRUN_UPPERBOUND = (SIZE / BATCH_NUMBER) >> 0;
 
 var timeoutId = setTimeout(function batch() {
     runner(batchRun);
@@ -29,11 +30,11 @@ function runner(index) {
                     var p = new Package(package);
                     p.getData(function (e, data) {
                         results[data.name] = data;
-                        if (i === context.length-1 && batch === 10) {
+                        if (i === context.length-1 && batch === BATCHRUN_UPPERBOUND) {
                             console.log('finished batch %d', batch);
                             clearTimeout(timeoutId);
-                            fs.writeFileSync('./output/' + batch + '.json', JSON.stringify(results));
-                            console.log('we can closed process now, process.exit?');
+                            fs.writeFileSync('./output/all.json', JSON.stringify(results));
+                            process.exit(0);
                         }
                     });
                 }
