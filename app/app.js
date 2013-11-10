@@ -6,6 +6,7 @@
 var express = require('express');
 var routes = require('./routes');
 var user = require('./routes/user');
+var package = require('./routes/package');
 var http = require('http');
 var path = require('path');
 
@@ -41,7 +42,10 @@ function start() {
 
 app.get('/', routes.index);
 app.get('/users', user.list);
-
+app.get('/package/:package', package.search);
+app.get('/package/:package/top', package.top);
+app.get('/package/:package/dependents', package.dependents);
+app.get('/package/:package/depscount', package.depscount);
 
 module.exports.configure = configure;
 module.exports.start = start;
