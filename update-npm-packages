@@ -1,0 +1,47 @@
+#!/usr/bin/env node
+
+var Rx = require('rx');
+var API = require('./lib/api');
+var mongo = require('mongoskin');
+var source = require('./1115.npm-all.json');
+var packages = Object.keys(source).
+    map(function (key) {
+        return source[key];
+    });
+
+/**
+ * insert all packages in mongodb
+ */
+var db = mongo.db(API.MONGO_CONNECT_STRING);
+
+var dbPackages = db.collection('packages');
+
+dbPackages.ensureIndex({ name: 1 }, { unique: true, dropDups: true });
+
+exports.updateNpmPackages = Rx.Observable.create(function (o) {
+
+    packages.
+        filter(function (p) {
+            return p.repository && ('git' === p.repository.type) && p.repository.url;
+        }).
+        map(function (p) {
+            return {
+                name: p.name,
+                description: p.description,
+                repo: p.repository,
+                keywords: p.keywords
+            };
+        }).
+        forEach(function (p) {
+            dbPackages.insert(p, function (e, doc) {
+                if (e) { return; }
+                o.onNext(p);
+            });
+        });
+
+    o.onCompleted();
+
+    return function () {
+        db.close();
+    }
+});

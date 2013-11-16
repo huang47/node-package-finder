@@ -20,7 +20,9 @@
     "mocha": "~1.14.0",
     "traverse": "~0.6.6",
     "express": "~3.4.4",
-    "jade": "*"
+    "jade": "*",
+    "mongoskin": "~0.6.0",
+    "npm-stats": "~0.2.0"
   },
   "engines": {
     "node": "0.10.x"

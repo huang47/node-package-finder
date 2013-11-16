@@ -1,0 +1,144 @@
+#!/usr/bin/env node
+
+var API = require('./lib/api');
+var mongo = require('mongoskin');
+var request = require('request');
+var Rx = require('rx');
+var githubHostRegex = /.*github.com[:\/](.*)\/.*/;
+
+const UPDATE_OPTIONS = {
+    upsert: true
+};
+
+var db = mongo.db(API.MONGO_CONNECT_STRING);
+
+function getResultObject(r) {
+    return {
+        id: r.login,
+        avatar: r.avatar_url,
+        type: r.type,
+        company: r.company,
+        blog: r.blog,
+        location: r.location,
+        email: r.email,
+        hireable: r.hireable,
+        bio: r.bio,
+        repos: r.publicRepos,
+        followers: r.followers,
+        following: r.following,
+        created: r.created_at,
+        updated: r.updated_at,
+        gists: r.public_gists,
+        timestamp: Date.now()
+    };
+}
+
+var packages = db.collection('packages');
+var githubbers = db.collection('githubbers');
+var nextRoundTime;
+
+/**
+ * download github users with given npm-package infomation.
+ *
+ * TODO
+ * we have to use mongodb way to distinct by either repo.url
+ * or githubber id. Now it's kind of wasting quota to fetch
+ * same githubber id.
+ *
+ * @method downloadGithubUsers
+ * @return {Rx.Observable}
+ */
+var downloadGithubUsers = Rx.Observable.create(function (o) {
+
+    packages.
+        find().
+        sort({ timestamp: 1 }).
+        each(function (e, p) {
+
+            // WTF
+            if (null === p) { return; }
+
+            var packageName = p.name,
+                githubUrl = p.repo.url,
+                githubUser,
+                matched;
+
+            matched = githubUrl.match(githubHostRegex);
+
+            if (null === matched) { return; }
+
+            githubUser = matched[1];
+
+            githubbers.findOne({ id: githubUser }, function (e, user) {
+
+                if (null === e && null === user) {
+
+                    request(API.GITHUB_USER_API.replace(/{id}/, githubUser), function (e, r) {
+
+                        if (e) { console.error(e); return; }
+
+                        if (!r || !r.body) { console.error(new Error('response without body')); return; }
+
+                        var body, resultObject;
+                        
+                        body = JSON.parse(r.body);
+
+                        if (body && body.message && (null !== body.message.match(/API/))) {
+                            nextRoundTime = new Date(r.headers['x-ratelimit-reset'] * 1000 + 60000);
+
+                            o.onCompleted();
+                        }
+
+                        resultObject = getResultObject(body);
+
+                        if (!resultObject || !resultObject.id) {
+                            // WTF & continue
+                            return;
+                        }
+
+                        packages.update({ name: packageName }, {
+                            $set: { timestamp: Date.now() }
+                        });
+
+                        githubbers.insert(resultObject, function (e, doc) {
+                            if (e) {
+                                console.error('insert post hook error', e);
+                                return;
+                            }
+                            o.onNext(resultObject);
+                        });
+                    });
+                }
+            })
+
+        })
+});
+
+function run() {
+
+    function log(result) {
+        console.log('upserted githubber', result.id);
+    }
+
+    function onError(e) {
+        console.error('something unexpected happened', e);
+    }
+
+    downloadGithubUsers.subscribe(
+        log,
+        onError,
+        function () {
+            if (!nextRoundTime) {
+                nextRoundTime = new Date(Date.now() + 61 * 60 * 1000);
+            }
+
+            console.log('next round timer ', nextRoundTime);
+
+            Rx.Observable.
+                timer(nextRoundTime).
+                subscribe(run)
+        }
+    );
+};
+
+exports.run = run;

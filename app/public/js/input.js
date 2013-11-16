@@ -4,10 +4,6 @@
 (function (exports, undefined) {
     'use strict';
 
-    function isBoolean(o) {
-        return 'boolean' === typeof o;
-    }
-
     /**
      * @class Input
      * @constructor
@@ -17,17 +13,10 @@
      * @chainable
      */
     function Input(element, config) {
-        var conf = config || {},
-            focuses,
-            blurs;
+        var conf = config || {};
 
         this._el = element;
         this._duration = conf.duration || this._DURATION;
-
-        focuses = this._fromEvent('focus');
-        blurs = this._fromEvent('blur');
-
-        this._xor(focuses, blurs).subscribe(this._handleFocusChanged.bind(this));
 
         return this;
     }
@@ -42,49 +31,6 @@
          * @default 200
          */
         _DURATION: 200,
-
-        /**
-         * A flag to indicate to remove empty string
-         * from observable. default to true
-         *
-         * @property
-         * @readOnly
-         * @type Boolean
-         * @default true
-         */
-        _IGNORE_EMPTY_STRING: true,
-
-        _handleFocusChanged: function _handleFocusChanged(isFocus) {
-            if (isFocus) {
-                this._handleFocus();
-            } else {
-                this._handleBlur();
-            }
-        },
-
-        /**
-         * handle input box focus.
-         *
-         * @protected
-         * @method _handleFocus
-         * @param {Event} e event context.
-         * @chainable
-         */
-        _handleFocus: function (e) {
-            // nada
-        },
-
-        /**
-         * handle input box blur.
-         *
-         * @protected
-         * @method _handleBlur
-         * @param {Event} e event context.
-         * @chainable
-         */
-        _handleBlur: function (e) {
-            return this.clear();
-        },
 
         /**
          * XOR given 2 observables.
@@ -155,19 +101,19 @@
          * @return {Observable}
          */
         getKeys: function getKeys() {
-            var keyups = this._fromEvent('keyup'),
+            var keyups = this._fromEvent('keypress'),
                 _EMPTY_KEY = '',
                 stream;
 
             return keyups.
-                throttle(200).
+                throttle(this._duration).
                 map(function (e) {
-                    return e.srcElement.value.trim();
+                    return e.target.value.trim();
                 }).
-                distinctUntilChanged().
                 filter(function (v) {
                     return v !== _EMPTY_KEY;
-                });
+                }).
+                distinctUntilChanged();
         }
     };
 

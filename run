@@ -1,0 +1,5 @@
+#!/usr/bin/env node
+
+var task = require('./download-github-users');
+
+task.run();

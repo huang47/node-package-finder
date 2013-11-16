@@ -52,3 +52,7 @@ get travis-ci test results with following format
     time: <string of last build time>
 }
 ```
+
+## appendix
+1. [irregular //github.com/{id}/{repo}.git](https://gist.github.com/huang47/7541812)
+

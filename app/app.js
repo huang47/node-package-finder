@@ -6,7 +6,8 @@
 var express = require('express');
 var routes = require('./routes');
 var user = require('./routes/user');
-var search = require('./routes/search');
+//var search = require('./routes/search');
+var search = require('./routes/mongo-search');
 var package = require('./routes/package');
 var http = require('http');
 var path = require('path');
@@ -46,9 +47,8 @@ app.get('/search/:query', search.search);
 app.get('/users', user.list);
 app.get('/package/:package', package.search);
 app.get('/package/:package/top', package.top);
-app.get('/package/:package/dependents/:index', package.dependents);
-app.get('/package/:package/depscount/:index', package.depscount);
-app.get('/package/:package/:author/ci/:index', package.ci);
+app.get('/package/:package/depscount/:index', package.dependentsCount);
+app.get('/package/:package/:author/ci/:index', package.travisCi);
 
 module.exports.configure = configure;
 module.exports.start = start;

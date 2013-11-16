@@ -1,2 +1,6 @@
+# secret file
+.secret.json
+
+# general
 node_modules
 output

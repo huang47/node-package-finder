@@ -1,27 +1,194 @@
 #!/usr/bin/env node
 
+var API = require('./lib/api');
+
+var mongo = require('mongoskin');
+var request = require('request');
+var Rx = require('rx');
 var fs = require('fs');
-var source = require('./src/npm-all-1108.json');
-var Package = require('./lib/package').Package;
+var EMPTY_OPTIONS = {};
 
-var pkgs = Object.keys(source).map(function (k) { return source[k]; });
+function NOOP () {}
 
-var results = {};
+function errorHandler(e, package) {
+    console.error(e, package);
+    fs.appendFileSync('./errors.log', JSON.stringify(e));
+}
 
-var clientSideTemplatePackages = pkgs.
-    filter(function (pkgMeta) {
-        return pkgMeta && pkgMeta.name;
-    }).
-    map(Package.create).
-    //filter(function (p) {
-        //// keyword/description contains either client or template
-        //return (-1 !== p.keyword.indexOf('client')) ||
-               //(-1 !== p.keyword.indexOf('template')) &&
-               //((-1 !== p.desc.indexOf('client')) ||
-               //(-1 !== p.desc.indexOf('template')));
-    //}).
-    forEach(function (p) {
-        results[p.name] = p.data;
+var db = mongo.db(API.MONGO_CONNECT_STRING);
+
+var packages = db.collection('packages');
+
+function getObservable(url) {
+    return Rx.Observable.create(function (o) {
+        request(url, function (e, res) {
+            if (e) { o.onError(e); }
+
+            if (!res || !res.body) { o.onError('no body'); }
+
+            var body, message, timer;
+
+            body = JSON.parse(res.body);
+            message = body.message || '';
+
+            // API rate limit exceeded
+            if (null !== message.match(/API rate limit exceeded/)) {
+                timer = res.headers['x-ratelimit-reset'] * 1000;
+
+                // delay 1 minutes
+                Rx.Observable.timer(new Date(timer + 60000)).subscribe(function () {
+                    run();
+                    // re run process
+                });
+            }
+        });
+
+        return NOOP
     });
+}
 
-fs.writeFileSync('./output/client-template.json', JSON.stringify(results));
+function run() {
+    packages.
+        find().
+        each(function (error, p) {
+
+            if (p.github && p.github.profile && p.github.repos) {
+                console.log('%s is fetched', p.name);
+                return;
+            }
+
+            if (!p.repo || !p.repo.url) {
+                console.log('%s w/o repo', p.name);
+                return;
+            }
+
+            var o, id, repoName;
+
+            o = p.repo.url.match(/.*github.com[:\/](.*)\/(.*)/);
+
+            if (null === o || !o[1]) {
+                console.log('format invalid %s', p.repo.url);
+                return;
+            }
+
+            id = o[1];
+            repoName = o[2];
+
+            if (id) {
+                if (!p.github || !p.github.repo) {
+
+                    if (-1 !== repoName.indexOf('.git')) {
+                        repoName = repoName.slice(0, repoName.indexOf('.git'));
+                    }
+
+                    request(API.GITHUB_REPO_API.replace(/{id}/, id).replace(/{repo}/, repoName), function (e, r) {
+
+                        if (!r || !r.body) {
+                            console.error("no body response");
+                            return;
+                        }
+
+                        var repo = JSON.parse(r.body);
+
+                        if (repo && repo.message && (null !== repo.message.match(/API/))) {
+                            console.log('HIT API LIMIT: %s %s %s', p.name, repoName, repo.message);
+                            return;
+                        }
+
+                        console.log('update %s repo %s', id, repoName);
+
+                        packages.update(
+                            { name: p.name },
+                            {
+                                $set: {
+                                    'github.repo': repo
+                                }
+                            },
+                            EMPTY_OPTIONS,
+                            NOOP
+                        )
+                    });
+                }
+
+    //                if (!p.github || !p.github.profile) {
+    //                    request(API.GITHUB_USER_API.replace(/{id}/, id), function (e, r) {
+    //
+    //                        if (!r || !r.body) {
+    //                            console.error("no body response");
+    //                            return;
+    //                        }
+    //
+    //                        var profile = JSON.parse(r.body);
+    //
+    //                        if (profile && profile.message && (null !== profile.message.match(/API/))) {
+    //                            console.log('HIT API LIMIT: %s %s', p.name, profile.message);
+    //                            return;
+    //                        }
+    //
+    //                        console.log('update %s profile', id);
+    //
+    //                        packages.update(
+    //                            { name: p.name },
+    //                            {
+    //                                $set: {
+    //                                    'github.profile': profile
+    //                                }
+    //                            },
+    //                            EMPTY_OPTIONS,
+    //                            NOOP
+    //                        )
+    //                    });
+    //                }
+    //
+    //                if (!p.github || !p.github.repo) {
+    //                    request(API.GITHUB_USER_REPOS_API.replace(/{id}/, id), function (e, r) {
+    //
+    //                        var repo;
+    //
+    //                        if (!r || !r.body) {
+    //                            console.error("no body response");
+    //                            return;
+    //                        }
+    //
+    //                        var repos = JSON.parse(r.body),
+    //                            mostPopularRepo;
+    //
+    //                        if (repos && repos.message && (null !== repos.message.match(/API/))) {
+    //                            throw new Error('HIT API LIMIT: ');
+    //                            return;
+    //                        }
+    //
+    //                        console.log('update %s package %s', id, p.name);
+    //
+    //                        if (!Array.isArray(repos)) {
+    //                            console.log('%s not found', p.name);
+    //                            return;
+    //                        } else if (0 === repos.length) {
+    //                            console.log('%s no repos', p.name);
+    //                            return;
+    //                        } else {
+    //                            mostPopularRepo = repos.reduce(function (acc, curr) {
+    //                                if (repoName === curr.name) { repo = curr; }
+    //                                return (acc.stargazers_count > curr.stargazers_count) ? acc : curr;
+    //                            });
+    //                        }
+    //
+    //                        packages.update(
+    //                            { name: p.name },
+    //                            {
+    //                                $set: {
+    //                                    'github.repo': repo,
+    //                                    'github.topRepo': mostPopularRepo,
+    //                                    'github.topStars': mostPopularRepo.stargazers_count
+    //                                }
+    //                            },
+    //                            EMPTY_OPTIONS,
+    //                            NOOP
+    //                        )
+    //                    });
+    //                }
+            } else {
+                console.error('package without id, WTF ' + JSON.stringify(p));
+            }
+        });
+}
