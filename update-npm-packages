@@ -3,7 +3,7 @@
 var Rx = require('rx');
 var API = require('./lib/api');
 var mongo = require('mongoskin');
-var source = require('./1115.npm-all.json');
+var source = require('./all.json');
 var packages = Object.keys(source).
     map(function (key) {
         return source[key];
