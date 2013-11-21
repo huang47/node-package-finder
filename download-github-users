@@ -36,6 +36,7 @@ function getResultObject(r) {
 var packages = db.collection('packages');
 var githubbers = db.collection('githubbers');
 var nextRoundTime;
+var lookup = {};
 
 /**
  * download github users with given npm-package infomation.
@@ -50,68 +51,87 @@ var nextRoundTime;
  */
 var downloadGithubUsers = Rx.Observable.create(function (o) {
 
-    packages.
+    githubbers.
         find().
-        sort({ timestamp: 1 }).
-        each(function (e, p) {
+        toArray(function (e, results) {
+            
+            // build up lookup table avoid of wasting github API quota
+            results.forEach(function (result) {
+                lookup[result.id] = true;
+            });
 
-            // WTF
-            if (null === p) { return; }
+            packages.
+                find().
+                sort({ timestamp: 1 }).
+                each(function (e, p) {
 
-            var packageName = p.name,
-                githubUrl = p.repo.url,
-                githubUser,
-                matched;
+                    // WTF
+                    if (null === p) { return; }
 
-            matched = githubUrl.match(githubHostRegex);
+                    var packageName = p.name,
+                        githubUrl = p.repo.url,
+                        githubUser,
+                        matched;
 
-            if (null === matched) { return; }
+                    matched = githubUrl.match(githubHostRegex);
 
-            githubUser = matched[1];
+                    if (null === matched) { return; }
 
-            githubbers.findOne({ id: githubUser }, function (e, user) {
+                    githubUser = matched[1];
 
-                if (null === e && null === user) {
+                    // safe some request bandwidth
+                    if (true === lookup[githubUser]) {
+                        console.log('%s is fetched', githubUser);
+                        return;
+                    }
 
-                    request(API.GITHUB_USER_API.replace(/{id}/, githubUser), function (e, r) {
+                    lookup[githubUser] = true;
 
-                        if (e) { console.error(e); return; }
+                    githubbers.findOne({ id: githubUser }, function (e, user) {
 
-                        if (!r || !r.body) { console.error(new Error('response without body')); return; }
+                        if (null === e && null === user) {
 
-                        var body, resultObject;
-                        
-                        body = JSON.parse(r.body);
+                            request(API.GITHUB_USER_API.replace(/{id}/, githubUser), function (e, r) {
 
-                        if (body && body.message && (null !== body.message.match(/API/))) {
-                            nextRoundTime = new Date(r.headers['x-ratelimit-reset'] * 1000 + 60000);
+                                if (e) { console.error(e); return; }
 
-                            o.onCompleted();
+                                if (!r || !r.body) { console.error(new Error('response without body')); return; }
+
+                                var body, resultObject;
+                                
+                                body = JSON.parse(r.body);
+
+                                if (body && body.message && (null !== body.message.match(/API/))) {
+                                    nextRoundTime = new Date(r.headers['x-ratelimit-reset'] * 1000 + 60000);
+
+                                    o.onCompleted();
+                                }
+
+                                resultObject = getResultObject(body);
+
+                                if (!resultObject || !resultObject.id) {
+                                    // WTF & continue
+                                    return;
+                                }
+
+                                packages.update({ name: packageName }, {
+                                    $set: { timestamp: Date.now() }
+                                });
+
+                                githubbers.insert(resultObject, function (e, doc) {
+                                    if (e) {
+                                        console.error('insert post hook error', e);
+                                        return;
+                                    }
+                                    o.onNext(resultObject);
+                                });
+                            });
                         }
+                    })
 
-                        resultObject = getResultObject(body);
+                })
+        });
 
-                        if (!resultObject || !resultObject.id) {
-                            // WTF & continue
-                            return;
-                        }
-
-                        packages.update({ name: packageName }, {
-                            $set: { timestamp: Date.now() }
-                        });
-
-                        githubbers.insert(resultObject, function (e, doc) {
-                            if (e) {
-                                console.error('insert post hook error', e);
-                                return;
-                            }
-                            o.onNext(resultObject);
-                        });
-                    });
-                }
-            })
-
-        })
 });
 
 function run() {
