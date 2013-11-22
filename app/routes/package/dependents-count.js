@@ -10,6 +10,11 @@ function getDepdentsCount(name, cb) {
     }, function (e, result) {
         if (e) { cb(e, null); }
 
+        if (!result || !result.body) {
+            cb(new Error('response without body'), null);
+            return;
+        }
+
         var body = JSON.parse(result.body) || {};
         var count = (body.rows && body.rows[0] && body.rows[0].value) || 0;
         cb(null, count);

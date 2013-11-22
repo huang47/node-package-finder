@@ -1,0 +1,6 @@
+#!/usr/bin/env node
+
+var request = require('request')
+var fs = require('fs');
+
+request('https://registry.npmjs.org/-/all').pipe(fs.createWriteStream('./all.json'));

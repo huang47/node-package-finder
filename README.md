@@ -53,6 +53,9 @@ get travis-ci test results with following format
 }
 ```
 
+## TODO
+1. normalize scores, especially downloads/stars/followers
+
 ## appendix
 1. [irregular //github.com/{id}/{repo}.git](https://gist.github.com/huang47/7541812)
 

@@ -1,5 +1,6 @@
 /*global document*/
 /*jslint nomen:true*/
+
 (function (exports) {
     'use strict';
 

@@ -103,8 +103,8 @@ var downloadGithubUsers = Rx.Observable.create(function (o) {
 
                                 if (body && body.message && (null !== body.message.match(/API/))) {
                                     nextRoundTime = new Date(r.headers['x-ratelimit-reset'] * 1000 + 60000);
-
                                     o.onCompleted();
+                                    return;
                                 }
 
                                 resultObject = getResultObject(body);

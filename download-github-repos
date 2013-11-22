@@ -5,11 +5,6 @@ var mongo = require('mongoskin');
 var request = require('request');
 var Rx = require('rx');
 var githubHostRegex = /.*github.com[:\/](.*)\/(.*)/;
-
-const UPDATE_OPTIONS = {
-    upsert: true
-};
-
 var db = mongo.db(API.MONGO_CONNECT_STRING);
 
 function getResultObject(r) {
@@ -76,53 +71,62 @@ var downloadGithubRepos = Rx.Observable.create(function (o) {
 
             fullName = githubUser + '/' + githubRepo;
 
-            console.log('request %s', fullName);
+            repos.findOne({ fullName: fullName }, function (e, repo) {
 
-            // save some request bandwidth
-            if (true === lookup[fullName]) {
-                console.log('%s is fetched', fullName);
-                return;
-            }
-
-            lookup[fullName] = true;
-
-            request(API.GITHUB_REPO_API.replace(/{id}/, githubUser).replace(/{repo}/, githubRepo), function (e, r) {
-
-                if (e) { console.error(e); return; }
-
-                if (!r || !r.body) { console.error(new Error('response without body')); return; }
-
-                var body, resultObject;
-                
-                body = JSON.parse(r.body);
-
-                if (body && body.message) {
-                    if (null !== body.message.match(/Not Found/)) {
-                        console.log('%s is not found in github API', fullName);
-                        return;
-                    } else if (null !== body.message.match(/API/)) {
-                        nextRoundTime = new Date(r.headers['x-ratelimit-reset'] * 1000 + 60000);
-                        o.onCompleted();
-                    }
-                }
-
-                resultObject = getResultObject(body);
-
-                if (!resultObject || !resultObject.id) {
-                    // WTF & continue
+                if (null !== repo) {
+                    console.log('%s is fetched', fullName);
                     return;
                 }
 
-                packages.update({ name: packageName }, {
-                    $set: { timestamp: Date.now() }
-                });
+                request(API.GITHUB_REPO_API.replace(/{id}/, githubUser).replace(/{repo}/, githubRepo), function (e, r) {
 
-                repos.insert(resultObject, function (e, doc) {
-                    if (e) {
-                        console.error('insert post hook error', e);
+                    if (e) { console.error(e); return; }
+
+                    if (!r || !r.body) { console.error(new Error('response without body')); return; }
+
+                    var body, resultObject;
+                    
+                    try {
+                        body = JSON.parse(r.body);
+                    } catch (e) {
+                        console.error('parsing response body error ', e);
                         return;
                     }
-                    o.onNext(resultObject);
+
+                    // if body is touched, then we have to update timestamp of package
+                    packages.update({ name: packageName }, {
+                        $set: { timestamp: Date.now() }
+                    });
+
+                    if (body && body.message) {
+                        console.log(body.message, 'message');
+                        if (null !== body.message.match(/Not Found/)) {
+                            console.log('https://github.com/%s is not found in github API', fullName);
+                            return;
+                        } else if (null !== body.message.match(/API/)) {
+                            nextRoundTime = new Date(r.headers['x-ratelimit-reset'] * 1000 + 60000);
+                            o.onCompleted();
+                            return;
+                        }
+                    }
+
+                    resultObject = getResultObject(body);
+
+                    if (!resultObject || !resultObject.fullName) {
+                        // WTF & continue
+                        return;
+                    }
+
+                    repos.insert(resultObject, function (e, doc) {
+                        if (e) {
+                            console.error('insert post hook error', e);
+                            return;
+                        }
+
+                        lookup[fullName] = true;
+
+                        o.onNext(resultObject);
+                    });
                 });
             });
         });

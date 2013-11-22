@@ -29,21 +29,39 @@ iframe {
     display: none;
 }
 
+li {
+    height: 100px;
+}
+
+a:focus {
+    outline: -webkit-focus-ring-color auto 5px;
+}
+
+li:nth-child(even) {
+    background-color: #f6f6f6;
+}
+
+li:hover {
+    background-color: #ddeeff;
+}
+
+.avatar {
+    padding: 10px 0 0 20px;
+    width: 80px;
+    height: 80px;
+}
+
 /* search result */
 .sr {
     display: block;
     overflow: hidden;
     text-decoration: none;
-    padding: 20px 20px 0 20px;
+    padding: 0;
     border-radius: 10px;
 }
 
 .sr {
     color: black;
-}
-
-.sr:hover {
-    background-color: #ddeeff;
 }
 
 .sr:visited {
@@ -60,6 +78,7 @@ iframe {
 }
 
 .sr h2 {
+    color: #6d93e4;
     font-size: 2em;
     margin: 0 0 10px 0;
 }

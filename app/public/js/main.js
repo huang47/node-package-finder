@@ -17,54 +17,37 @@
 
     global.searchResultCb = function(results) {
         results.forEach(function (result, index) {
+            template.one('img').setAttribute('src', result.author.avatar);
 
-            var github = result && result.github || {},
-                githubProfile = github.profile || {},
-                githubRepo = github.repo || {},
-                author = githubProfile.login;
+            template.one('img').setAttribute('alt', result.author.id);
 
-            template.one('a').setAttribute('href', 'https://npmjs.org/package/' + result.name);
+            template.one('a.author').setAttribute('href', 'https://github.com/' + result.author.id);
+
+            template.one('a.author').setAttribute('title', result.author.id);
+
+            template.one('a.sr').setAttribute('href', 'https://npmjs.org/package/' + result.name);
+
+            template.one('a.sr').setAttribute('title', result.description);
 
             template.one('h2').textContent = result.name;
 
-            if (githubRepo.stargazers_count) {
-                template.one('.fa-star').textContent = githubRepo.stargazers_count;
-            } else {
-                template.one('.fa-star').classList.add('hide');
-            }
+            template.one('.fa-star').textContent = result.repo.stars;
 
-            template.one('.fa-github').textContent = author;
+            template.one('.fa-github').textContent = result.author.id;
 
-            if (githubProfile.followers) {
-                template.one('.fa-users').textContent = githubProfile.followers;
-            } else {
-                template.one('.fa-users').classList.add('hide');
-            }
+            template.one('.fa-wrench').textContent = result.dependedUpon;
 
-            if (result.score) {
-                template.one('.fa-certificate').textContent = result.score;
-            } else {
-                template.one('.fa-certificate').classList.add('hide');
-            }
+            template.one('.fa-users').textContent = result.author.followers;
+
+            template.one('.fa-cloud-download').textContent = result.downloads;
 
             template.appendTo(list);
 
             (function (i) {
-                if (result.name && author) {
-                    injectScript(['', 'package', result.name, author, 'ci', i].join('/'));
-                }
-
-                injectScript(['', 'package', result.name, 'depscount', i].join('/'));
+                injectScript(['', 'package', result.name, result.author.id, 'ci', i].join('/'));
             }(index));
         });
     }
-
-    global.dependentsCb = function (data) {
-        var node = list.querySelector('li:nth-child(' + (parseInt(data.index, 10) + 1) + ') .fa-wrench');
-        if (node) {
-            node.textContent = data.number;
-        }
-    };
 
     function injectScript(src) {
         var s = d.createElement('script');

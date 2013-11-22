@@ -5,6 +5,7 @@ const app = require('./app/app');
 var isProduction = (process.env.NODE_ENV === 'production');
 var http = require('http');
 var port = (isProduction ? 80 : 8000);
+var fs = require('fs');
 
 var options = {
   port: port
@@ -13,3 +14,7 @@ var options = {
 app.configure(options);
 
 app.start();
+
+process.on('uncaughtException', function(err) {
+    fs.appendFile('/tmp/npf.error.log', 'Caught exception: ' + err, function () {});
+});
