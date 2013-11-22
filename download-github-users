@@ -79,7 +79,7 @@ var downloadGithubUsers = Rx.Observable.create(function (o) {
 
                     githubUser = matched[1];
 
-                    // safe some request bandwidth
+                    // save some request bandwidth
                     if (true === lookup[githubUser]) {
                         console.log('%s is fetched', githubUser);
                         return;

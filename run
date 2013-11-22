@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 
-var task = require('./download-github-users');
+var task = require('./download-github-repos');
 
 task.run();
