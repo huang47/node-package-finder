@@ -1,0 +1,152 @@
+#!/usr/bin/env node
+
+var API = require('../lib/api');
+var mongo = require('mongoskin');
+var request = require('request');
+var Rx = require('rx');
+var githubHostRegex = /.*github.com[:\/](.*)\/(.*)/;
+
+const UPDATE_OPTIONS = {
+    upsert: true
+};
+
+var db = mongo.db(API.MONGO_CONNECT_STRING);
+
+function getResultObject(r) {
+    return {
+        name: r.name,
+        fullName: r.full_name,
+        owner: r.owner && r.owner.login,
+        private: r.private,
+        description: r.description,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+        stars: r.stargazers_count || 0,
+        openIssues: r.open_issues_count || 0,
+        forks: r.forks,
+        subscribers: r.subscribers_count || 0,
+        hasWiki: r.has_wiki || false,
+        timestamp: Date.now()
+    };
+}
+
+var packages = db.collection('packages');
+var repos = db.collection('repos');
+var nextRoundTime;
+
+/**
+ * download github users with given npm-package infomation.
+ *
+ * TODO
+ * we have to use mongodb way to distinct by either repo.url
+ * or githubber id. Now it's kind of wasting quota to fetch
+ * same githubber id.
+ *
+ * @method downloadGithubUsers
+ * @return {Rx.Observable}
+ */
+exports.run = Rx.Observable.create(function (o) {
+
+    packages.
+        find().
+        sort({ timestamp: 1 }).
+        toArray(function (e, pkgs) {
+
+            pkgs = pkgs.
+                filter(function (p) {
+                    return p && p.repoUrl && null !== p.repoUrl.match(githubHostRegex);
+                }).
+                map(function (p) {
+                    var matched = p.repoUrl.match(githubHostRegex),
+                        user = matched[1],
+                        repo = matched[2];
+
+                    return {
+                        name: p.name,
+                        user: user,
+                        repo: repo,
+                        api: API.GITHUB_REPO_API.replace(/{id}/, user).replace(/{repo}/, repo),
+                    };
+                });
+
+            Rx.Observable.interval(200).
+                takeWhile(function (index) {
+                    return index < 5500;
+                }).
+                subscribe(function (index) {
+
+                    var result = pkgs[index];
+
+                    request({
+                        url: result.api,
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'
+                        },
+                        timeout: 5000
+                    }, function (e, r) {
+
+                        if (e) { console.error(e); return; }
+
+                        if (!r || !r.body) {
+                            console.error(new Error('response without body'));
+                            return;
+                        }
+
+                        var body, resultObject, now;
+                        
+                        body = JSON.parse(r.body);
+
+                        if (body && body.message) {
+                            if (null !== body.message.match(/API/)) {
+                                nextRoundTime = new Date(r.headers['x-ratelimit-reset'] * 1000);
+                                o.onError(nextRoundTime);
+                                console.error('HIT API LIMIT and retry after ' + nextRoundTime.toString());
+                            } else  if (null !== body.message.match(/Not Found/)) {
+                                console.error(result.user + '/' + result.repo, body.message);
+                            } else {
+                                console.error(body.message, 'not api limit');
+                            }
+                            return;
+                        }
+
+                        resultObject = getResultObject(body);
+
+                        if (!resultObject || !resultObject.id) {
+                            // WTF & continue
+                            return;
+                        }
+
+                        o.onNext(resultObject.fullName, 'quota', 4999 - index);
+
+                        packages.update(
+                            { name: result.name },
+                            {
+                                $set: {
+                                    timestamp: resultObject.timestamp
+                                }
+                            }
+                        );
+
+                        repos.update(
+                            { fullName: resultObject.fullName },
+                            { 
+                                $set: resultObject
+                            },
+                            UPDATE_OPTIONS
+                        );
+                    });
+                });
+            });
+});
+
+function retry(date) {
+    var timer = new Date(date.getTime() + 60000);
+
+    console.log(timer, 'retry timer');
+
+    Rx.Observable.timer(timer).subscribe(function () {
+        exports.run.subscribe(console.log, retry);
+    });
+}
+
+exports.run.subscribe(console.log, retry);
