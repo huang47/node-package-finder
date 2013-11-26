@@ -23,7 +23,7 @@ exports.run = Rx.Observable.create(function (o) {
 
     packages.
         filter(isGitRepo).
-        forEach(function (p) {
+        forEach(function (p, index) {
             var updateMap = {
                 description: p.description,
                 repoUrl: p.repository.url,
@@ -31,13 +31,20 @@ exports.run = Rx.Observable.create(function (o) {
                 timestamp: Date.now()
             };
 
-            o.onNext(updateMap);
-
             dbPackages.update(
                 { name: p.name },
-                { $set: updateMap },
+                {
+                    $set: {
+                        description: p.description,
+                        repoUrl: p.repository.url,
+                        keywords: p.keywords,
+                        timestamp: Date.now()
+                    }
+                },
                 { upsert: true }
             );
+
+            o.onNext(index);
         });
 
     o.onCompleted();
