@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+
+var Rx = require('rx');
+var API = require('../lib/api');
+var mongo = require('mongoskin');
+var source = require('../all.json');
+var packages = Object.keys(source).
+    map(function (key) {
+        return source[key];
+    });
+
+var db = mongo.db(API.MONGO_CONNECT_STRING);
+
+var dbPackages = db.collection('packages');
+
+function isGitRepo(package) {
+    return package.repository &&
+        ('git' === package.repository.type) &&
+        package.repository.url;
+}
+
+exports.run = Rx.Observable.create(function (o) {
+
+    packages.
+        filter(isGitRepo).
+        forEach(function (p) {
+            var updateMap = {
+                description: p.description,
+                repoUrl: p.repository.url,
+                keywords: p.keywords,
+                timestamp: Date.now()
+            };
+
+            o.onNext(updateMap);
+
+            dbPackages.update(
+                { name: p.name },
+                { $set: updateMap },
+                { upsert: true }
+            );
+        });
+
+    o.onCompleted();
+
+    return function () { db.close(); }
+});
